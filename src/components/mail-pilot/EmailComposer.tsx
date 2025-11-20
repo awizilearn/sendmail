@@ -35,8 +35,8 @@ export default function EmailComposer({ selectedRecipient, headers }: EmailCompo
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      subject: `Confirmation de votre rendez-vous avec {{formateur}} votre formateur {{plateforme}}`,
-      body: `Bonjour {{Civilité}} {{Bénéficiare}},\n\nNous vous confirmons votre prochain rendez-vous pour la continuité de votre formation : {{Formation}}.\n\nLe rendez-vous est prévu pour le {{Date du RDV}}.\n\nVeuillez tenir informé votre formateur ou formatrice en cas d'empêchement.\n\nCordialement,\nL'équipe LIKE FORMATION`,
+      subject: `Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre formateur {{PLATEFORME}}`,
+      body: `Bonjour {{Civilité}} {{Bénéficiare}},\n\nNous vous confirmons votre prochain rendez-vous pour la continuité de votre formation : {{Formation}}.\n\nLe rendez-vous est prévu pour le {{Date du RDV}} à {{Heure RDV}}.\n\nVeuillez tenir informé votre formateur ou formatrice en cas d'empêchement.\n\nCordialement,\nL'équipe de formation`,
     },
   });
 
@@ -80,12 +80,11 @@ export default function EmailComposer({ selectedRecipient, headers }: EmailCompo
 
     setIsGenerating(true);
     try {
-      // Mapping from example file, may need to be more flexible in a real app
       const input = {
         recipientName: String(selectedRecipient['Bénéficiare'] || ''),
         eventName: String(selectedRecipient['Formation'] || 'formation'),
         eventType: String(selectedRecipient['Type de RDV'] || 'rendez-vous'),
-        eventDate: String(selectedRecipient['Date du RDV'] || 'prochainement'),
+        eventDate: `${selectedRecipient['Date du RDV'] || ''} at ${selectedRecipient['Heure RDV'] || ''}`,
         trainerName: String(selectedRecipient['Formateur/Formatrice'] || ''),
       };
 
