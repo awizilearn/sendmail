@@ -52,39 +52,70 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
           throw new Error('Excel file must have a header row and at least one data row.');
         }
 
-        const headers = jsonData[0] as string[];
+        const headers = (jsonData[0] as string[]).map(h => h.trim());
+        const emailColumn = 'adresse mail';
+        const emailColumnIndex = headers.indexOf(emailColumn);
+        
+        if (emailColumnIndex === -1) {
+            throw new Error(`The required column '${emailColumn}' was not found in the file.`);
+        }
+
         // Add 'Civilité Formateur' if it doesn't exist for the logic
         if (!headers.includes('Civilité Formateur')) {
           headers.push('Civilité Formateur');
         }
-
+        
         const rdvDate = addWorkingDays(new Date(), 4);
+        
+        const uniqueRows: MailRecipient[] = [];
+        const seenEmails = new Set<string>();
+        let duplicateCount = 0;
 
-        const rows = jsonData.slice(1).map(rowArray => {
-          const recipient: MailRecipient = {};
-          (rowArray as (string|number|Date)[]).forEach((cell, index) => {
-            if (headers[index] && headers[index] !== 'Civilité Formateur') { // handle existing headers
-                if (cell instanceof Date) {
-                    recipient[headers[index]] = cell.toLocaleDateString();
-                } else {
-                    recipient[headers[index]] = cell;
-                }
+        jsonData.slice(1).forEach(rowArray => {
+            const email = rowArray[emailColumnIndex];
+            if (email && seenEmails.has(email)) {
+                duplicateCount++;
+                return;
             }
-          });
-          // Manually add 'Civilité Formateur' for demonstration if not in file
-          if (rowArray.length < headers.length) {
-            recipient['Civilité Formateur'] = 'M.'; // Default to 'M.' for example
-          }
-          recipient['Date du RDV'] = rdvDate.toLocaleDateString();
-          return recipient;
+            if(email) {
+                seenEmails.add(email);
+            }
+
+            const recipient: MailRecipient = {};
+            (rowArray as (string|number|Date)[]).forEach((cell, index) => {
+                if (headers[index] && headers[index] !== 'Civilité Formateur') {
+                    if (cell instanceof Date) {
+                        recipient[headers[index]] = cell.toLocaleDateString();
+                    } else {
+                        recipient[headers[index]] = cell;
+                    }
+                }
+            });
+
+            // Manually add 'Civilité Formateur' for demonstration if not in file
+            if (rowArray.length < headers.length) {
+                recipient['Civilité Formateur'] = 'M.'; // Default to 'M.' for example
+            }
+            recipient['Date du RDV'] = rdvDate.toLocaleDateString();
+            uniqueRows.push(recipient);
         });
 
-        onDataImported(rows, headers);
+        onDataImported(uniqueRows, headers);
+        
+        let successMessage = `${uniqueRows.length} records imported successfully from ${file.name}.`;
+        if (duplicateCount > 0) {
+            toast({
+              title: 'Duplicates Found',
+              description: `${duplicateCount} duplicate row(s) based on email address were ignored.`,
+            });
+        }
+
         toast({
           title: 'Success',
-          description: `${rows.length} records imported successfully from ${file.name}.`,
+          description: successMessage,
           className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
         });
+
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
