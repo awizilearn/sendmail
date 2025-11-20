@@ -35,7 +35,7 @@ export default function EmailComposer({ selectedRecipient, headers }: EmailCompo
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      subject: `Confirmation de votre rendez-vous avec {{Formateur/Formatrice}}`,
+      subject: `Confirmation de votre rendez-vous avec {{formateur}} votre formateur {{plateforme}}`,
       body: `Bonjour {{Civilité}} {{Bénéficiare}},\n\nNous vous confirmons votre prochain rendez-vous pour la continuité de votre formation : {{Formation}}.\n\nLe rendez-vous est prévu pour le {{Date du RDV}}.\n\nVeuillez tenir informé votre formateur ou formatrice en cas d'empêchement.\n\nCordialement,\nL'équipe LIKE FORMATION`,
     },
   });
