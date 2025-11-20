@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -96,14 +97,14 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
       };
       localStorage.setItem('smtpSettings', JSON.stringify(settingsToSave));
       toast({
-        title: 'Settings Saved',
-        description: 'Your SMTP settings have been saved locally.',
+        title: 'Paramètres sauvegardés',
+        description: 'Vos paramètres SMTP ont été sauvegardés localement.',
       });
     } catch (error) {
       toast({
         variant: 'destructive',
-        title: 'Save Failed',
-        description: 'Could not save SMTP settings to local storage.',
+        title: 'Échec de la sauvegarde',
+        description: 'Impossible de sauvegarder les paramètres SMTP dans le stockage local.',
       });
     }
   };
@@ -111,22 +112,22 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
   const handleSendTestEmail = async (values: z.infer<typeof smtpSchema>) => {
     setIsTesting(true);
     toast({
-      title: 'Testing Connection...',
-      description: 'Attempting to send a test email.',
+      title: 'Test de la connexion...',
+      description: "Tentative d'envoi d'un e-mail de test.",
     });
 
     const result = await sendTestEmail(values);
 
     if (result.success) {
       toast({
-        title: 'Connection Verified',
+        title: 'Connexion vérifiée',
         description: result.message,
         className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600',
       });
     } else {
       toast({
         variant: 'destructive',
-        title: 'Connection Failed',
+        title: 'Échec de la connexion',
         description: result.message,
       });
     }
@@ -146,7 +147,7 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
 
   const handleSendEmails = async (values: z.infer<typeof smtpSchema>) => {
     if (!user) {
-      toast({ variant: 'destructive', title: 'User not authenticated' });
+      toast({ variant: 'destructive', title: 'Utilisateur non authentifié' });
       return;
     }
     setIsSending(true);
@@ -158,9 +159,16 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
     for (let i = 0; i < recipients.length; i++) {
         const recipient = recipients[i];
         const recipientEmail = String(recipient['adresse mail']);
+        if (!recipientEmail) {
+            setSkippedCount(prev => prev + 1);
+            setSendingProgress(((i + 1) / recipients.length) * 100);
+            continue;
+        }
+
+        const recipientId = recipientEmail; // Use email as the recipient ID
         const appointmentDate = String(recipient['Date du RDV']);
 
-        const { sent } = await checkEmailSent(user.uid, recipientEmail, appointmentDate);
+        const { sent } = await checkEmailSent(user.uid, recipientId, appointmentDate);
 
         if (sent) {
             setSkippedCount(prev => prev + 1);
@@ -171,7 +179,7 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
             const result = await sendConfiguredEmail(values, recipientEmail, personalizedSubject, personalizedBody);
             
             if (result.success) {
-                await logSentEmail(user.uid, recipientEmail, appointmentDate);
+                await logSentEmail(user.uid, recipientId, appointmentDate);
                 setSentCount(prev => prev + 1);
             } else {
                 setFailedCount(prev => prev + 1);
@@ -183,8 +191,8 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
     setIsSending(false);
 
     toast({
-        title: 'Email Sending Complete',
-        description: `Sent: ${sentCount}, Skipped: ${skippedCount}, Failed: ${failedCount}`,
+        title: 'Envoi d\'e-mails terminé',
+        description: `Envoyés: ${sentCount}, Ignorés: ${skippedCount}, Échoués: ${failedCount}`,
         duration: 5000,
     });
   };
@@ -331,5 +339,3 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
     </div>
   );
 }
-
-    

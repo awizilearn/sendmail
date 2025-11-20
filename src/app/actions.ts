@@ -1,3 +1,4 @@
+
 'use server';
 
 import { generateConfirmationMessage, type ConfirmationMessageInput } from '@/ai/flows/confirmation-message-generation';
@@ -11,7 +12,7 @@ export async function getAIGeneratedMessage(input: ConfirmationMessageInput): Pr
         return { success: true, message: result.confirmationMessage };
     } catch (error) {
         console.error('AI message generation failed:', error);
-        return { success: false, message: 'Failed to generate message from AI. Please try again.' };
+        return { success: false, message: "Échec de la génération du message par l'IA. Veuillez réessayer." };
     }
 }
 
@@ -26,7 +27,7 @@ export async function sendTestEmail(smtpConfig: SmtpConfig): Promise<{ success: 
   const { host, port, user, pass } = smtpConfig;
 
   if (!host || !port || !user || !pass) {
-    return { success: false, message: 'SMTP configuration is incomplete.' };
+    return { success: false, message: 'La configuration SMTP est incomplète.' };
   }
 
   const transporter = nodemailer.createTransport({
@@ -50,16 +51,16 @@ export async function sendTestEmail(smtpConfig: SmtpConfig): Promise<{ success: 
     await transporter.sendMail({
       from: user,
       to: user, // Send to self
-      subject: 'Mail Pilot - Test Connection',
-      text: 'Your SMTP connection is configured correctly.',
-      html: '<b>Your SMTP connection is configured correctly.</b>',
+      subject: 'Mail Pilot - Test de Connexion',
+      text: 'Votre connexion SMTP est configurée correctement.',
+      html: '<b>Votre connexion SMTP est configurée correctement.</b>',
     });
 
-    return { success: true, message: 'Connection successful. Test email sent.' };
+    return { success: true, message: 'Connexion réussie. E-mail de test envoyé.' };
   } catch (error) {
     console.error('Failed to send test email:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { success: false, message: `Connection failed: ${errorMessage}` };
+    return { success: false, message: `Échec de la connexion: ${errorMessage}` };
   }
 }
 
@@ -86,44 +87,42 @@ export async function sendConfiguredEmail(
         subject,
         html: body,
       });
-      return { success: true, message: `Email sent to ${recipientEmail}` };
+      return { success: true, message: `E-mail envoyé à ${recipientEmail}` };
     } catch (error) {
       console.error(`Failed to send email to ${recipientEmail}:`, error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      return { success: false, message: `Failed to send to ${recipientEmail}: ${errorMessage}` };
+      return { success: false, message: `Échec de l'envoi à ${recipientEmail}: ${errorMessage}` };
     }
 }
 
-export async function logSentEmail(userId: string, recipientEmail: string, appointmentDate: string): Promise<{ success: boolean; message?: string }> {
+export async function logSentEmail(userId: string, recipientId: string, appointmentDate: string): Promise<{ success: boolean; message?: string }> {
     const { firestore } = initializeFirebase();
     try {
-      // Use recipientEmail as the document ID for the recipient
-      const recipientDocRef = doc(firestore, 'users', userId, 'recipients', recipientEmail);
-      // This will create or update the recipient document.
-      // You might want to add more recipient data here if needed, using { merge: true }
-      await setDoc(recipientDocRef, { email: recipientEmail }, { merge: true });
-
-      // Now create a new log entry in the emailLogs subcollection with a unique ID
-      const logCollectionRef = collection(recipientDocRef, 'emailLogs');
-      const logDocRef = doc(logCollectionRef); // Creates a reference with a new auto-generated ID
+      const logCollectionRef = collection(firestore, 'users', userId, 'recipients', recipientId, 'emailLogs');
+      const logDocRef = doc(logCollectionRef);
       
       await setDoc(logDocRef, {
         appointmentDate,
         sentDateTime: new Date().toISOString(),
-        status: 'sent'
+        status: 'sent',
+        recipientId: recipientId,
       });
+
+      // Also update the recipient doc to ensure it exists
+      const recipientDocRef = doc(firestore, 'users', userId, 'recipients', recipientId);
+      await setDoc(recipientDocRef, { id: recipientId }, { merge: true });
+
       return { success: true };
     } catch (error) {
       console.error('Failed to log email:', error);
-      return { success: false, message: 'Failed to log email in Firestore.' };
+      return { success: false, message: "Échec de l'enregistrement de l'e-mail dans Firestore." };
     }
 }
   
-export async function checkEmailSent(userId: string, recipientEmail: string, appointmentDate: string): Promise<{ sent: boolean; message?: string }> {
+export async function checkEmailSent(userId: string, recipientId: string, appointmentDate: string): Promise<{ sent: boolean; message?: string }> {
     const { firestore } = initializeFirebase();
     try {
-      // Path to the emailLogs subcollection for the specific recipient
-      const logsCollection = collection(firestore, 'users', userId, 'recipients', recipientEmail, 'emailLogs');
+      const logsCollection = collection(firestore, 'users', userId, 'recipients', recipientId, 'emailLogs');
       const q = query(
         logsCollection,
         where('appointmentDate', '==', appointmentDate)
@@ -132,6 +131,6 @@ export async function checkEmailSent(userId: string, recipientEmail: string, app
       return { sent: !querySnapshot.empty };
     } catch (error) {
       console.error('Failed to check email log:', error);
-      return { sent: false, message: 'Failed to check email log in Firestore.' };
+      return { sent: false, message: "Échec de la vérification de l'historique des e-mails dans Firestore." };
     }
 }

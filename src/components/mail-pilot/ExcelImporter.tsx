@@ -49,7 +49,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
         });
 
         if (jsonData.length < 2) {
-          throw new Error('Excel file must have a header row and at least one data row.');
+          throw new Error("Le fichier Excel doit comporter une ligne d'en-tête et au moins une ligne de données.");
         }
 
         const headers = (jsonData[0] as string[]).map(h => h.trim());
@@ -57,7 +57,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
         const emailColumnIndex = headers.indexOf(emailColumn);
         
         if (emailColumnIndex === -1) {
-            throw new Error(`The required column '${emailColumn}' was not found in the file.`);
+            throw new Error(`La colonne requise '${emailColumn}' n'a pas été trouvée dans le fichier.`);
         }
 
         // Add 'Civilité Formateur' if it doesn't exist for the logic
@@ -102,7 +102,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
 
         onDataImported(uniqueRows, headers);
         
-        let successMessage = `${uniqueRows.length} records imported successfully from ${file.name}.`;
+        let successMessage = `${uniqueRows.length} enregistrements importés avec succès depuis ${file.name}.`;
         if (duplicateCount > 0) {
             toast({
               title: 'Doublons trouvés',
@@ -168,7 +168,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
           <div className="bg-primary/10 text-primary p-2 rounded-lg"><UploadCloud className="w-5 h-5"/></div>
           1. Importer les données
         </CardTitle>
-        <CardDescription>Téléchargez la liste des destinataires au format .xlsx, .xls ou .csv. Assurez-vous d'inclure une colonne 'Civilité Formateur' ('M.' ou 'Mme') pour un affichage correct.</CardDescription>
+        <CardDescription className="pl-12">Téléchargez la liste des destinataires au format .xlsx, .xls ou .csv. Assurez-vous d'inclure une colonne 'Civilité Formateur' ('M.' ou 'Mme') pour un affichage correct.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-center w-full">
@@ -183,7 +183,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
                   <p className="text-xs text-muted-foreground">XLSX, XLS or CSV</p>
                 </>
               )}
-              {loading && <p className="text-xs text-primary mt-2">Processing...</p>}
+              {loading && <p className="text-xs text-primary mt-2">Traitement en cours...</p>}
             </div>
             <Input id="dropzone-file" type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx, .xls, .csv" disabled={loading} />
             {fileName && (
