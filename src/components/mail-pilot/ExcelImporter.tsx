@@ -53,12 +53,17 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
         }
 
         const headers = jsonData[0] as string[];
+        // Add 'Civilité Formateur' if it doesn't exist for the logic
+        if (!headers.includes('Civilité Formateur')) {
+          headers.push('Civilité Formateur');
+        }
+
         const rdvDate = addWorkingDays(new Date(), 4);
 
         const rows = jsonData.slice(1).map(rowArray => {
           const recipient: MailRecipient = {};
           (rowArray as (string|number|Date)[]).forEach((cell, index) => {
-            if (headers[index]) {
+            if (headers[index] && headers[index] !== 'Civilité Formateur') { // handle existing headers
                 if (cell instanceof Date) {
                     recipient[headers[index]] = cell.toLocaleDateString();
                 } else {
@@ -66,6 +71,10 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
                 }
             }
           });
+          // Manually add 'Civilité Formateur' for demonstration if not in file
+          if (rowArray.length < headers.length) {
+            recipient['Civilité Formateur'] = 'M.'; // Default to 'M.' for example
+          }
           recipient['Date du RDV'] = rdvDate.toLocaleDateString();
           return recipient;
         });
@@ -128,7 +137,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
           <div className="bg-primary/10 text-primary p-2 rounded-lg"><UploadCloud className="w-5 h-5"/></div>
           1. Import Data
         </CardTitle>
-        <CardDescription>Upload your recipient list in .xlsx, .xls, or .csv format.</CardDescription>
+        <CardDescription>Téléchargez la liste des destinataires au format .xlsx, .xls ou .csv. Assurez-vous d'inclure une colonne 'Civilité Formateur' ('M.' ou 'Mme') pour un affichage correct.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-center w-full">
@@ -139,7 +148,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
                 <p className="text-sm text-foreground"><span className="font-semibold">{fileName}</span></p>
               ) : (
                 <>
-                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Cliquez pour télécharger</span> ou glisser-déposer</p>
                   <p className="text-xs text-muted-foreground">XLSX, XLS or CSV</p>
                 </>
               )}

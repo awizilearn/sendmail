@@ -35,8 +35,8 @@ export default function EmailComposer({ selectedRecipient, headers }: EmailCompo
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      subject: `Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre formateur {{PLATEFORME}}`,
-      body: `Bonjour {{Civilité}} {{Bénéficiare}},\n\nNous vous confirmons votre prochain rendez-vous pour la continuité de votre formation : {{Formation}}.\n\nLe rendez-vous est prévu pour le {{Date du RDV}} à {{Heure RDV}}.\n\nVeuillez tenir informé votre formateur ou formatrice en cas d'empêchement.\n\nCordialement,\nL'équipe de formation`,
+      subject: `Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre {{formateur/formatrice}} {{PLATEFORME}}`,
+      body: `Bonjour {{Civilité}} {{Bénéficiare}},\n\nNous vous confirmons votre prochain rendez-vous pour la continuité de votre formation : {{Formation}}.\n\nLe rendez-vous est prévu pour le {{Date du RDV}} de {{Heure RDV}} à {{Fin RDV}}.\n\nVeuillez tenir informé votre {{formateur/formatrice}} en cas d'empêchement.\n\nCordialement,\nL'équipe de formation`,
     },
   });
 
@@ -120,7 +120,7 @@ export default function EmailComposer({ selectedRecipient, headers }: EmailCompo
             3. Compose & Preview
         </CardTitle>
         <CardDescription className="pl-12">
-            Craft your email template. Use variables from the dropdown to personalize for each recipient.
+            Créez votre modèle d'e-mail. Utilisez des variables pour personnaliser chaque destinataire.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -132,7 +132,7 @@ export default function EmailComposer({ selectedRecipient, headers }: EmailCompo
                 name="subject"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Subject</FormLabel>
+                    <FormLabel>Sujet</FormLabel>
                     <FormControl>
                       <Input placeholder="Email subject" {...field} />
                     </FormControl>
@@ -145,7 +145,7 @@ export default function EmailComposer({ selectedRecipient, headers }: EmailCompo
                 name="body"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Body</FormLabel>
+                    <FormLabel>Corps de l'e-mail</FormLabel>
                     <FormControl>
                       <Textarea placeholder="Email body..." className="min-h-[200px] text-sm leading-relaxed" {...field} />
                     </FormControl>
@@ -159,13 +159,13 @@ export default function EmailComposer({ selectedRecipient, headers }: EmailCompo
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={handleGenerateAI} disabled={isGenerating || !selectedRecipient} size="sm">
               <Wand2 className={`mr-2 h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
-              Generate with AI
+              Générer avec l'IA
             </Button>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Insert Variable:</span>
+              <span className="text-sm text-muted-foreground">Insérer une variable :</span>
               <Select onValueChange={insertVariable}>
                 <SelectTrigger className="w-[180px] h-9">
-                  <SelectValue placeholder="Select variable" />
+                  <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
                 <SelectContent>
                   {headers.map((header) => (
@@ -181,7 +181,7 @@ export default function EmailComposer({ selectedRecipient, headers }: EmailCompo
           <Separator />
 
           <div>
-            <h3 className="text-lg font-semibold mb-2">Email Preview</h3>
+            <h3 className="text-lg font-semibold mb-2">Aperçu de l'e-mail</h3>
             <EmailPreview 
               subject={subject} 
               body={body} 

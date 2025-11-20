@@ -13,7 +13,12 @@ const placeholderRegex = /\{\{([^}]+)\}\}/g;
 export default function EmailPreview({ subject, body, data }: EmailPreviewProps) {
   const replacePlaceholders = (text: string) => {
     if (!data) return text;
-    return text.replace(placeholderRegex, (match, key) => {
+    
+    // Custom logic for "formateur/formatrice"
+    const formateurGender = data['Civilité Formateur'] === 'Mme' ? 'formatrice' : 'formateur';
+    let processedText = text.replace(/\{\{formateur\/formatrice\}\}/g, formateurGender);
+    
+    return processedText.replace(placeholderRegex, (match, key) => {
       const trimmedKey = key.trim();
       return data[trimmedKey] !== undefined ? String(data[trimmedKey]) : match;
     });
@@ -26,7 +31,7 @@ export default function EmailPreview({ subject, body, data }: EmailPreviewProps)
     <Card className="bg-accent/10 border-accent/30">
       <CardHeader className="p-4">
         <div className="text-sm font-normal">
-          <span className="font-semibold text-muted-foreground">Subject: </span>{previewSubject}
+          <span className="font-semibold text-muted-foreground">Sujet: </span>{previewSubject}
         </div>
       </CardHeader>
       <Separator />
@@ -35,7 +40,7 @@ export default function EmailPreview({ subject, body, data }: EmailPreviewProps)
           <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: previewBody }} />
         ) : (
           <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground text-center">Select a recipient to see a preview.</p>
+            <p className="text-muted-foreground text-center">Sélectionnez un destinataire pour voir un aperçu.</p>
           </div>
         )}
       </CardContent>
