@@ -125,7 +125,8 @@ export async function checkEmailSent(userId: string, recipientId: string, appoin
       const logsCollection = collection(firestore, 'users', userId, 'recipients', recipientId, 'emailLogs');
       const q = query(
         logsCollection,
-        where('appointmentDate', '==', appointmentDate)
+        where('appointmentDate', '==', appointmentDate),
+        where('recipientId', '==', recipientId)
       );
       const querySnapshot = await getDocs(q);
       return { sent: !querySnapshot.empty };

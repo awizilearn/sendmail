@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { UploadCloud, FileCheck2, X } from 'lucide-react';
+import { UploadCloud, FileCheck2, X, FileUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -85,7 +85,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
             (rowArray as (string|number|Date)[]).forEach((cell, index) => {
                 if (headers[index] && headers[index] !== 'Civilité Formateur') {
                     if (cell instanceof Date) {
-                        recipient[headers[index]] = cell.toLocaleDateString();
+                        recipient[headers[index]] = cell.toLocaleDateString('fr-FR');
                     } else {
                         recipient[headers[index]] = cell;
                     }
@@ -96,7 +96,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
             if (rowArray.length < headers.length) {
                 recipient['Civilité Formateur'] = 'M.'; // Default to 'M.' for example
             }
-            recipient['Date du RDV'] = rdvDate.toLocaleDateString();
+            recipient['Date du RDV'] = rdvDate.toLocaleDateString('fr-FR');
             uniqueRows.push(recipient);
         });
 
@@ -164,15 +164,15 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <div className="bg-primary/10 text-primary p-2 rounded-lg"><UploadCloud className="w-5 h-5"/></div>
+        <CardTitle className="flex items-center gap-3">
+          <div className="bg-primary/10 text-primary p-2.5 rounded-lg flex items-center justify-center"><FileUp className="w-6 h-6"/></div>
           1. Importer les données
         </CardTitle>
         <CardDescription className="pl-12">Téléchargez la liste des destinataires au format .xlsx, .xls ou .csv. Assurez-vous d'inclure une colonne 'Civilité Formateur' ('M.' ou 'Mme') pour un affichage correct.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-center w-full">
-          <label htmlFor="dropzone-file" onDrop={handleDrop} onDragOver={e => e.preventDefault()} className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-accent/10 border-border relative">
+          <label htmlFor="dropzone-file" onDrop={handleDrop} onDragOver={e => e.preventDefault()} className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-accent/50 border-border relative">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               {fileName ? <FileCheck2 className="w-8 h-8 mb-4 text-green-500" /> : <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />}
               {fileName ? (
@@ -195,5 +195,3 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
     </Card>
   );
 }
-
-    

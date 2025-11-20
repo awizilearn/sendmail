@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Mail, Wand2 } from 'lucide-react';
+import { PencilRuler, Wand2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -131,8 +131,8 @@ export default function EmailComposer({
   return (
     <Card className="h-full shadow-lg">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-            <div className="bg-primary/10 text-primary p-2 rounded-lg"><Mail className="w-5 h-5"/></div>
+        <CardTitle className="flex items-center gap-3">
+            <div className="bg-primary/10 text-primary p-2.5 rounded-lg flex items-center justify-center"><PencilRuler className="w-6 h-6"/></div>
             3. Composer & Prévisualiser
         </CardTitle>
         <CardDescription className="pl-12">
@@ -209,5 +209,3 @@ export default function EmailComposer({
     </Card>
   );
 }
-
-    

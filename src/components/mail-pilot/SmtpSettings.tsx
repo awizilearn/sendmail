@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -199,8 +198,8 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
 
   return (
     <div>
-      <CardTitle className="flex items-center gap-2">
-          <div className="bg-primary/10 text-primary p-2 rounded-lg"><Settings className="w-5 h-5"/></div>
+      <CardTitle className="flex items-center gap-3">
+          <div className="bg-primary/10 text-primary p-2.5 rounded-lg flex items-center justify-center"><Send className="w-6 h-6"/></div>
           4. Configurer & Envoyer
       </CardTitle>
       <CardDescription className="mt-2 pl-12">

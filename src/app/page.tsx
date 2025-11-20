@@ -8,8 +8,6 @@ import DataTable from "@/components/mail-pilot/DataTable";
 import EmailComposer from "@/components/mail-pilot/EmailComposer";
 import SmtpSettings from "@/components/mail-pilot/SmtpSettings";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Download, LogOut } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
@@ -74,12 +72,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header>
-        <Button variant="ghost" size="sm" onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Logout
-        </Button>
-      </Header>
+      <Header onLogout={handleLogout} userEmail={user.email} />
       <main className="flex-1 container mx-auto p-4 md:p-8 space-y-8">
         <ExcelImporter onDataImported={handleDataImported} />
         

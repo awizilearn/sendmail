@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, List } from 'lucide-react';
+import { Download, CheckCircle2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -28,8 +28,8 @@ export default function DataTable({ data, headers, selectedRow, onRowSelect, onE
     <div>
       <div className="flex justify-between items-start">
         <div>
-          <CardTitle className="flex items-center gap-2">
-              <div className="bg-primary/10 text-primary p-2 rounded-lg"><List className="w-5 h-5"/></div>
+          <CardTitle className="flex items-center gap-3">
+              <div className="bg-primary/10 text-primary p-2.5 rounded-lg flex items-center justify-center"><CheckCircle2 className="w-6 h-6"/></div>
               2. Vérifier les données
           </CardTitle>
           <CardDescription className="mt-2 pl-12">
@@ -38,15 +38,15 @@ export default function DataTable({ data, headers, selectedRow, onRowSelect, onE
         </div>
         <Button variant="outline" size="sm" onClick={onExport} disabled={data.length === 0}>
             <Download className="mr-2 h-4 w-4" />
-            Exporter vers Excel
+            Exporter
         </Button>
       </div>
         <ScrollArea className="h-72 w-full rounded-md border mt-4">
             <Table>
-                <TableHeader className="sticky top-0 bg-card shadow-sm">
+                <TableHeader className="sticky top-0 bg-card shadow-sm z-10">
                     <TableRow>
                         {headers.map((header) => (
-                            <TableHead key={header} className="whitespace-nowrap font-semibold">{header}</TableHead>
+                            <TableHead key={header} className="whitespace-nowrap font-semibold bg-card">{header}</TableHead>
                         ))}
                     </TableRow>
                 </TableHeader>
@@ -57,7 +57,7 @@ export default function DataTable({ data, headers, selectedRow, onRowSelect, onE
                             onClick={() => onRowSelect(row)}
                             className={cn(
                                 'cursor-pointer',
-                                selectedRow && JSON.stringify(row) === JSON.stringify(selectedRow) ? 'bg-accent/20 hover:bg-accent/30' : ''
+                                selectedRow && JSON.stringify(row) === JSON.stringify(selectedRow) ? 'bg-accent/50 hover:bg-accent' : ''
                             )}
                             aria-selected={selectedRow && JSON.stringify(row) === JSON.stringify(selectedRow)}
                         >
@@ -74,5 +74,3 @@ export default function DataTable({ data, headers, selectedRow, onRowSelect, onE
     </div>
   );
 }
-
-    
