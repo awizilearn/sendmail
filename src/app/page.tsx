@@ -7,6 +7,9 @@ import DataTable from "@/components/mail-pilot/DataTable";
 import EmailComposer from "@/components/mail-pilot/EmailComposer";
 import SmtpSettings from "@/components/mail-pilot/SmtpSettings";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import * as XLSX from 'xlsx';
 
 // This will be our data structure for a row
 export type MailRecipient = { [key: string]: string | number };
@@ -29,6 +32,13 @@ export default function Home() {
   const handleRowSelect = (recipient: MailRecipient) => {
     setSelectedRecipient(recipient);
   };
+  
+  const handleExport = () => {
+    const worksheet = XLSX.utils.json_to_sheet(recipients);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Recipients");
+    XLSX.writeFile(workbook, "recipients.xlsx");
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -46,6 +56,7 @@ export default function Home() {
                     headers={headers} 
                     selectedRow={selectedRecipient} 
                     onRowSelect={handleRowSelect} 
+                    onExport={handleExport}
                   />
                   <SmtpSettings recipientCount={recipients.length} />
                 </div>

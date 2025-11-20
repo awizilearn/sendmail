@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Send, Settings, Loader2, MailCheck } from 'lucide-react';
+import { Send, Settings, Loader2, MailCheck, Save } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -23,12 +23,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { sendTestEmail } from '@/app/actions';
+import { Checkbox } from '../ui/checkbox';
 
 const smtpSchema = z.object({
   host: z.string().min(1, 'Host is required'),
   port: z.coerce.number().min(1, 'Port is required'),
   user: z.string().min(1, 'Username is required').email('Invalid email address'),
-  pass: z.string().min(1, 'Password is required'),
+  pass: z.string(),
+  savePassword: z.boolean().default(false),
 });
 
 type SmtpSettingsProps = {
@@ -47,8 +49,50 @@ export default function SmtpSettings({ recipientCount }: SmtpSettingsProps) {
       port: 587,
       user: '',
       pass: '',
+      savePassword: false,
     },
   });
+
+  useEffect(() => {
+    try {
+      const savedSettings = localStorage.getItem('smtpSettings');
+      if (savedSettings) {
+        const { host, port, user, pass, savePassword } = JSON.parse(savedSettings);
+        form.reset({ 
+          host, 
+          port, 
+          user, 
+          pass: savePassword ? pass : '', 
+          savePassword 
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load SMTP settings from localStorage", error);
+    }
+  }, [form]);
+  
+  const handleSaveSettings = (values: z.infer<typeof smtpSchema>) => {
+    try {
+      const settingsToSave = {
+        host: values.host,
+        port: values.port,
+        user: values.user,
+        pass: values.savePassword ? values.pass : '',
+        savePassword: values.savePassword,
+      };
+      localStorage.setItem('smtpSettings', JSON.stringify(settingsToSave));
+      toast({
+        title: 'Settings Saved',
+        description: 'Your SMTP settings have been saved locally.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Save Failed',
+        description: 'Could not save SMTP settings to local storage.',
+      });
+    }
+  };
 
   const handleSendTestEmail = async (values: z.infer<typeof smtpSchema>) => {
     setIsTesting(true);
@@ -103,7 +147,7 @@ export default function SmtpSettings({ recipientCount }: SmtpSettingsProps) {
           4. Configure & Send
       </CardTitle>
       <CardDescription className="mt-2 pl-12">
-        Configure your SMTP client to send the emails. Credentials are not stored.
+        Configure your SMTP client to send the emails. Credentials can be saved locally.
       </CardDescription>
       <Form {...form}>
         <form className="space-y-4 mt-4">
@@ -141,8 +185,39 @@ export default function SmtpSettings({ recipientCount }: SmtpSettingsProps) {
               )}
             />
           </div>
+          <div className="flex items-center space-x-2">
+            <FormField
+              control={form.control}
+              name="savePassword"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md p-1">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="cursor-pointer">
+                      Save Password (stored locally, unencrypted)
+                    </FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-2">
+            <Button 
+                type="button" 
+                variant="secondary"
+                onClick={form.handleSubmit(handleSaveSettings)} 
+                disabled={isTesting || isSending}
+                className="w-full sm:w-auto"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              Save Settings
+            </Button>
             <Button 
                 type="button" 
                 variant="outline"
@@ -159,7 +234,7 @@ export default function SmtpSettings({ recipientCount }: SmtpSettingsProps) {
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button type="button" className="w-full flex-1" disabled={isSending || isTesting || recipientCount === 0}>
+                <Button type="button" className="w-full flex-1" disabled={isSending || isTesting || recipientCount === 0 || !form.formState.isValid || !form.getValues('pass')}>
                   {isSending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
