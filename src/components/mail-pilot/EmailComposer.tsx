@@ -26,19 +26,36 @@ const formSchema = z.object({
 type EmailComposerProps = {
   selectedRecipient: MailRecipient | null;
   headers: string[];
+  subject: string;
+  onSubjectChange: (subject: string) => void;
+  body: string;
+  onBodyChange: (body: string) => void;
 };
 
-export default function EmailComposer({ selectedRecipient, headers }: EmailComposerProps) {
+export default function EmailComposer({ 
+  selectedRecipient, 
+  headers,
+  subject,
+  onSubjectChange,
+  body,
+  onBodyChange
+}: EmailComposerProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      subject: `Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre {{formateur/formatrice}} {{PLATEFORME}}`,
-      body: `Bonjour {{Civilité}} {{Bénéficiare}},\n\nNous vous confirmons votre prochain rendez-vous pour la continuité de votre formation : {{Formation}}.\n\nLe rendez-vous est prévu pour le {{Date du RDV}} de {{Heure RDV}} à {{Fin RDV}}.\n\nVeuillez tenir informé votre {{formateur/formatrice}} en cas d'empêchement.\n\nCordialement,\nL'équipe de formation`,
-    },
+    values: { subject, body },
   });
+
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      onSubjectChange(value.subject || '');
+      onBodyChange(value.body || '');
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onSubjectChange, onBodyChange]);
+
 
   useEffect(() => {
     // Reset form if recipient is cleared
@@ -46,9 +63,6 @@ export default function EmailComposer({ selectedRecipient, headers }: EmailCompo
         form.reset();
     }
   }, [selectedRecipient, form]);
-
-  const subject = form.watch('subject');
-  const body = form.watch('body');
 
   const insertVariable = (variable: string) => {
     const textarea = document.querySelector('textarea[name="body"]') as HTMLTextAreaElement;

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Send, Settings, Loader2, MailCheck, Save } from 'lucide-react';
+import { Send, Settings, Loader2, MailCheck, Save, AlertCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -22,8 +22,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { sendTestEmail } from '@/app/actions';
+import { checkEmailSent, logSentEmail, sendConfiguredEmail, sendTestEmail } from '@/app/actions';
 import { Checkbox } from '../ui/checkbox';
+import type { MailRecipient } from '@/app/page';
+import { useUser } from '@/firebase';
+import { Progress } from '../ui/progress';
 
 const smtpSchema = z.object({
   host: z.string().min(1, 'Host is required'),
@@ -33,14 +36,25 @@ const smtpSchema = z.object({
   savePassword: z.boolean().default(false),
 });
 
+const placeholderRegex = /\{\{([^}]+)\}\}/g;
+
 type SmtpSettingsProps = {
+  recipients: MailRecipient[];
   recipientCount: number;
+  emailSubject: string;
+  emailBody: string;
 };
 
-export default function SmtpSettings({ recipientCount }: SmtpSettingsProps) {
+export default function SmtpSettings({ recipients, recipientCount, emailSubject, emailBody }: SmtpSettingsProps) {
   const [isSending, setIsSending] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [sendingProgress, setSendingProgress] = useState(0);
+  const [sentCount, setSentCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
+
   const { toast } = useToast();
+  const { user } = useUser();
 
   const form = useForm<z.infer<typeof smtpSchema>>({
     resolver: zodResolver(smtpSchema),
@@ -120,23 +134,58 @@ export default function SmtpSettings({ recipientCount }: SmtpSettingsProps) {
     setIsTesting(false);
   };
 
+  const replacePlaceholders = (text: string, data: MailRecipient) => {
+    const formateurGender = data['Civilité Formateur'] === 'Mme' ? 'formatrice' : 'formateur';
+    let processedText = text.replace(/\{\{formateur\/formatrice\}\}/g, formateurGender);
+    
+    return processedText.replace(placeholderRegex, (match, key) => {
+      const trimmedKey = key.trim();
+      return data[trimmedKey] !== undefined ? String(data[trimmedKey]) : match;
+    });
+  };
 
   const handleSendEmails = async (values: z.infer<typeof smtpSchema>) => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'User not authenticated' });
+      return;
+    }
     setIsSending(true);
+    setSendingProgress(0);
+    setSentCount(0);
+    setSkippedCount(0);
+    setFailedCount(0);
 
-    toast({
-      title: 'Sending Emails...',
-      description: `Simulating sending to ${recipientCount} recipients.`,
-    });
+    for (let i = 0; i < recipients.length; i++) {
+        const recipient = recipients[i];
+        const recipientEmail = String(recipient['adresse mail']);
+        const appointmentDate = String(recipient['Date du RDV']);
+
+        const { sent } = await checkEmailSent(user.uid, recipientEmail, appointmentDate);
+
+        if (sent) {
+            setSkippedCount(prev => prev + 1);
+        } else {
+            const personalizedSubject = replacePlaceholders(emailSubject, recipient);
+            const personalizedBody = replacePlaceholders(emailBody, recipient).replace(/\n/g, '<br />');
+
+            const result = await sendConfiguredEmail(values, recipientEmail, personalizedSubject, personalizedBody);
+            
+            if (result.success) {
+                await logSentEmail(user.uid, recipientEmail, appointmentDate);
+                setSentCount(prev => prev + 1);
+            } else {
+                setFailedCount(prev => prev + 1);
+            }
+        }
+        setSendingProgress(((i + 1) / recipients.length) * 100);
+    }
     
-    // Simulate sending emails
-    await new Promise(resolve => setTimeout(resolve, 2500));
-
     setIsSending(false);
+
     toast({
-      title: 'Simulation Complete',
-      description: `Emails would have been sent to ${recipientCount} recipients.`,
-      className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
+        title: 'Email Sending Complete',
+        description: `Sent: ${sentCount}, Skipped: ${skippedCount}, Failed: ${failedCount}`,
+        duration: 5000,
     });
   };
 
@@ -207,6 +256,18 @@ export default function SmtpSettings({ recipientCount }: SmtpSettingsProps) {
             />
           </div>
 
+          {isSending && (
+            <div className="space-y-2">
+                <Progress value={sendingProgress} />
+                <div className="text-sm text-muted-foreground flex justify-between">
+                    <span>Sent: {sentCount}</span>
+                    <span>Skipped: {skippedCount}</span>
+                    <span>Failed: {failedCount}</span>
+                    <span>Total: {recipientCount}</span>
+                </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-2">
             <Button 
                 type="button" 
@@ -240,25 +301,31 @@ export default function SmtpSettings({ recipientCount }: SmtpSettingsProps) {
                   ) : (
                     <Send className="mr-2 h-4 w-4" />
                   )}
-                  Simulate Sending to {recipientCount > 0 ? recipientCount : ''} Recipients
+                  Send to {recipientCount > 0 ? recipientCount : ''} Recipients
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Email Sending Simulation</AlertDialogTitle>
+                  <AlertDialogTitle>Confirm Email Sending</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will start a simulation of sending emails to all {recipientCount} recipients. No actual emails will be sent.
+                    You are about to send emails to all {recipientCount} recipients. This will check for duplicates and only send to those who have not received this email before.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={form.handleSubmit(handleSendEmails)} disabled={isSending}>
-                    {isSending ? 'Simulating...' : 'Proceed'}
+                    {isSending ? 'Sending...' : 'Proceed'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
           </div>
+          {!form.getValues('pass') && (
+            <div className="flex items-center text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 mt-2">
+                <AlertCircle className="h-5 w-5 mr-2" />
+                <span>Password is required to send emails.</span>
+            </div>
+          )}
         </form>
       </Form>
     </div>

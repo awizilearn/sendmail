@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from 'next/navigation';
 import Header from "@/components/mail-pilot/Header";
 import ExcelImporter from "@/components/mail-pilot/ExcelImporter";
 import DataTable from "@/components/mail-pilot/DataTable";
@@ -8,8 +9,10 @@ import EmailComposer from "@/components/mail-pilot/EmailComposer";
 import SmtpSettings from "@/components/mail-pilot/SmtpSettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, LogOut } from "lucide-react";
 import * as XLSX from 'xlsx';
+import { useUser, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
 
 // This will be our data structure for a row
 export type MailRecipient = { [key: string]: string | number };
@@ -18,6 +21,19 @@ export default function Home() {
   const [recipients, setRecipients] = useState<MailRecipient[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
+  const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre {{formateur/formatrice}} {{PLATEFORME}}`);
+  const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},\n\nNous vous confirmons votre prochain rendez-vous pour la continuité de votre formation : {{Formation}}.\n\nLe rendez-vous est prévu pour le {{Date du RDV}} de {{Heure RDV}} à {{Fin RDV}}.\n\nVeuillez tenir informé votre {{formateur/formatrice}} en cas d'empêchement.\n\nCordialement,\nL'équipe de formation`);
+
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
 
   const handleDataImported = (data: MailRecipient[], sheetHeaders: string[]) => {
     setRecipients(data);
@@ -40,9 +56,30 @@ export default function Home() {
     XLSX.writeFile(workbook, "recipients.xlsx");
   };
 
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth);
+      router.push('/login');
+    }
+  };
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header />
+      <Header>
+        <Button variant="ghost" size="sm" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </Button>
+      </Header>
       <main className="flex-1 container mx-auto p-4 md:p-8 space-y-8">
         <ExcelImporter onDataImported={handleDataImported} />
         
@@ -58,13 +95,22 @@ export default function Home() {
                     onRowSelect={handleRowSelect} 
                     onExport={handleExport}
                   />
-                  <SmtpSettings recipientCount={recipients.length} />
+                  <SmtpSettings 
+                    recipientCount={recipients.length}
+                    recipients={recipients}
+                    emailBody={emailBody}
+                    emailSubject={emailSubject}
+                  />
                 </div>
                 <div className="lg:mt-0">
                   <EmailComposer 
                     key={selectedRecipient ? JSON.stringify(selectedRecipient) : 'empty'}
                     selectedRecipient={selectedRecipient} 
                     headers={headers} 
+                    subject={emailSubject}
+                    onSubjectChange={setEmailSubject}
+                    body={emailBody}
+                    onBodyChange={setEmailBody}
                   />
                 </div>
               </div>
