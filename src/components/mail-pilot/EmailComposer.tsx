@@ -60,9 +60,11 @@ export default function EmailComposer({
   useEffect(() => {
     // Reset form if recipient is cleared
     if (!selectedRecipient) {
-        form.reset();
+        form.reset({ subject, body });
+    } else {
+        form.reset({ subject, body });
     }
-  }, [selectedRecipient, form]);
+  }, [selectedRecipient, form, subject, body]);
 
   const insertVariable = (variable: string) => {
     const textarea = document.querySelector('textarea[name="body"]') as HTMLTextAreaElement;

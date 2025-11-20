@@ -97,9 +97,17 @@ export async function sendConfiguredEmail(
 export async function logSentEmail(userId: string, recipientEmail: string, appointmentDate: string): Promise<{ success: boolean; message?: string }> {
     const { firestore } = initializeFirebase();
     try {
-      const logRef = doc(collection(firestore, 'users', userId, 'emailLogs'));
-      await setDoc(logRef, {
-        recipientEmail,
+      // Use recipientEmail as the document ID for the recipient
+      const recipientDocRef = doc(firestore, 'users', userId, 'recipients', recipientEmail);
+      // This will create or update the recipient document.
+      // You might want to add more recipient data here if needed, using { merge: true }
+      await setDoc(recipientDocRef, { email: recipientEmail }, { merge: true });
+
+      // Now create a new log entry in the emailLogs subcollection with a unique ID
+      const logCollectionRef = collection(recipientDocRef, 'emailLogs');
+      const logDocRef = doc(logCollectionRef); // Creates a reference with a new auto-generated ID
+      
+      await setDoc(logDocRef, {
         appointmentDate,
         sentDateTime: new Date().toISOString(),
         status: 'sent'
@@ -114,10 +122,10 @@ export async function logSentEmail(userId: string, recipientEmail: string, appoi
 export async function checkEmailSent(userId: string, recipientEmail: string, appointmentDate: string): Promise<{ sent: boolean; message?: string }> {
     const { firestore } = initializeFirebase();
     try {
-      const logsCollection = collection(firestore, 'users', userId, 'emailLogs');
+      // Path to the emailLogs subcollection for the specific recipient
+      const logsCollection = collection(firestore, 'users', userId, 'recipients', recipientEmail, 'emailLogs');
       const q = query(
         logsCollection,
-        where('recipientEmail', '==', recipientEmail),
         where('appointmentDate', '==', appointmentDate)
       );
       const querySnapshot = await getDocs(q);
