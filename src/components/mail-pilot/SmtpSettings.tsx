@@ -193,17 +193,17 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
     <div>
       <CardTitle className="flex items-center gap-2">
           <div className="bg-primary/10 text-primary p-2 rounded-lg"><Settings className="w-5 h-5"/></div>
-          4. Configure & Send
+          4. Configurer & Envoyer
       </CardTitle>
       <CardDescription className="mt-2 pl-12">
-        Configure your SMTP client to send the emails. Credentials can be saved locally.
+        Configurez votre client SMTP pour envoyer les emails. Les identifiants peuvent être sauvegardés localement.
       </CardDescription>
       <Form {...form}>
         <form className="space-y-4 mt-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField control={form.control} name="host" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>SMTP Host</FormLabel>
+                  <FormLabel>Hôte SMTP</FormLabel>
                   <FormControl><Input placeholder="smtp.example.com" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -219,7 +219,7 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
             />
             <FormField control={form.control} name="user" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel>Nom d'utilisateur</FormLabel>
                   <FormControl><Input type="email" placeholder="your@email.com" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -227,7 +227,7 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
             />
             <FormField control={form.control} name="pass" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Mot de passe</FormLabel>
                   <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -248,7 +248,7 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel className="cursor-pointer">
-                      Save Password (stored locally, unencrypted)
+                      Sauvegarder le mot de passe (stocké localement, non chiffré)
                     </FormLabel>
                   </div>
                 </FormItem>
@@ -260,9 +260,9 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
             <div className="space-y-2">
                 <Progress value={sendingProgress} />
                 <div className="text-sm text-muted-foreground flex justify-between">
-                    <span>Sent: {sentCount}</span>
-                    <span>Skipped: {skippedCount}</span>
-                    <span>Failed: {failedCount}</span>
+                    <span>Envoyés: {sentCount}</span>
+                    <span>Ignorés: {skippedCount}</span>
+                    <span>Échoués: {failedCount}</span>
                     <span>Total: {recipientCount}</span>
                 </div>
             </div>
@@ -277,7 +277,7 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
                 className="w-full sm:w-auto"
             >
               <Save className="mr-2 h-4 w-4" />
-              Save Settings
+              Sauvegarder
             </Button>
             <Button 
                 type="button" 
@@ -291,7 +291,7 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
               ) : (
                 <MailCheck className="mr-2 h-4 w-4" />
               )}
-              Send Test Email
+              Email de test
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -301,20 +301,20 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
                   ) : (
                     <Send className="mr-2 h-4 w-4" />
                   )}
-                  Send to {recipientCount > 0 ? recipientCount : ''} Recipients
+                  Envoyer à {recipientCount > 0 ? recipientCount : ''} Destinataires
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Email Sending</AlertDialogTitle>
+                  <AlertDialogTitle>Confirmer l'envoi des e-mails</AlertDialogTitle>
                   <AlertDialogDescription>
-                    You are about to send emails to all {recipientCount} recipients. This will check for duplicates and only send to those who have not received this email before.
+                    Vous êtes sur le point d'envoyer des e-mails aux {recipientCount} destinataires. Le système vérifiera les doublons et n'enverra qu'aux personnes n'ayant pas déjà reçu cet e-mail.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
                   <AlertDialogAction onClick={form.handleSubmit(handleSendEmails)} disabled={isSending}>
-                    {isSending ? 'Sending...' : 'Proceed'}
+                    {isSending ? 'Envoi en cours...' : 'Procéder'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -323,7 +323,7 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
           {!form.getValues('pass') && (
             <div className="flex items-center text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 mt-2">
                 <AlertCircle className="h-5 w-5 mr-2" />
-                <span>Password is required to send emails.</span>
+                <span>Le mot de passe est requis pour envoyer des e-mails.</span>
             </div>
           )}
         </form>
@@ -331,3 +331,5 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
     </div>
   );
 }
+
+    

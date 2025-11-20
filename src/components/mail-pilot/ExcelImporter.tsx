@@ -105,13 +105,13 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
         let successMessage = `${uniqueRows.length} records imported successfully from ${file.name}.`;
         if (duplicateCount > 0) {
             toast({
-              title: 'Duplicates Found',
-              description: `${duplicateCount} duplicate row(s) based on email address were ignored.`,
+              title: 'Doublons trouvés',
+              description: `${duplicateCount} ligne(s) en double basée sur l'adresse e-mail a/ont été ignorée(s).`,
             });
         }
 
         toast({
-          title: 'Success',
+          title: 'Succès',
           description: successMessage,
           className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
         });
@@ -120,8 +120,8 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
           variant: 'destructive',
-          title: 'Import Failed',
-          description: `Could not process the Excel file. ${errorMessage}`,
+          title: 'Échec de l\'importation',
+          description: `Impossible de traiter le fichier Excel. ${errorMessage}`,
         });
         setFileName('');
         onDataImported([], []);
@@ -132,8 +132,8 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
     reader.onerror = (error) => {
       toast({
         variant: 'destructive',
-        title: 'File Read Error',
-        description: 'There was an error reading the file.',
+        title: 'Erreur de lecture du fichier',
+        description: 'Une erreur s\'est produite lors de la lecture du fichier.',
       });
       setLoading(false);
       setFileName('');
@@ -166,7 +166,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <div className="bg-primary/10 text-primary p-2 rounded-lg"><UploadCloud className="w-5 h-5"/></div>
-          1. Import Data
+          1. Importer les données
         </CardTitle>
         <CardDescription>Téléchargez la liste des destinataires au format .xlsx, .xls ou .csv. Assurez-vous d'inclure une colonne 'Civilité Formateur' ('M.' ou 'Mme') pour un affichage correct.</CardDescription>
       </CardHeader>
@@ -195,3 +195,5 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
     </Card>
   );
 }
+
+    

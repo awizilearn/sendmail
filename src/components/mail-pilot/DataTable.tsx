@@ -30,15 +30,15 @@ export default function DataTable({ data, headers, selectedRow, onRowSelect, onE
         <div>
           <CardTitle className="flex items-center gap-2">
               <div className="bg-primary/10 text-primary p-2 rounded-lg"><List className="w-5 h-5"/></div>
-              2. Review Data
+              2. Vérifier les données
           </CardTitle>
           <CardDescription className="mt-2 pl-12">
-              Select a recipient from the list to preview their personalized email. Total: {data.length} recipients.
+              Sélectionnez un destinataire dans la liste pour prévisualiser son e-mail personnalisé. Total: {data.length} destinataires.
           </CardDescription>
         </div>
         <Button variant="outline" size="sm" onClick={onExport} disabled={data.length === 0}>
             <Download className="mr-2 h-4 w-4" />
-            Export to Excel
+            Exporter vers Excel
         </Button>
       </div>
         <ScrollArea className="h-72 w-full rounded-md border mt-4">
@@ -74,3 +74,5 @@ export default function DataTable({ data, headers, selectedRow, onRowSelect, onE
     </div>
   );
 }
+
+    

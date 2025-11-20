@@ -88,8 +88,8 @@ export default function EmailComposer({
     if (!selectedRecipient) {
       toast({
         variant: 'destructive',
-        title: 'No Recipient Selected',
-        description: 'Please select a recipient to generate a personalized message.',
+        title: 'Aucun destinataire sélectionné',
+        description: 'Veuillez sélectionner un destinataire pour générer un message personnalisé.',
       });
       return;
     }
@@ -109,8 +109,8 @@ export default function EmailComposer({
         const currentBody = form.getValues('body');
         form.setValue('body', currentBody + '\n\n' + result.message, { shouldValidate: true });
         toast({
-          title: 'AI Suggestion Added',
-          description: 'A new paragraph has been added to the email body.',
+          title: 'Suggestion IA ajoutée',
+          description: 'Un nouveau paragraphe a été ajouté au corps de l\'e-mail.',
           className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
         });
       } else {
@@ -120,7 +120,7 @@ export default function EmailComposer({
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       toast({
         variant: 'destructive',
-        title: 'AI Generation Failed',
+        title: 'La génération par IA a échoué',
         description: errorMessage,
       });
     } finally {
@@ -133,7 +133,7 @@ export default function EmailComposer({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
             <div className="bg-primary/10 text-primary p-2 rounded-lg"><Mail className="w-5 h-5"/></div>
-            3. Compose & Preview
+            3. Composer & Prévisualiser
         </CardTitle>
         <CardDescription className="pl-12">
             Créez votre modèle d'e-mail. Utilisez des variables pour personnaliser chaque destinataire.
@@ -209,3 +209,5 @@ export default function EmailComposer({
     </Card>
   );
 }
+
+    
