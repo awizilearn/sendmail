@@ -10,14 +10,10 @@
           "type": "string",
           "description": "Unique identifier for the recipient."
         },
-        "email": {
+        "emailAddress": {
           "type": "string",
           "description": "Email address of the recipient.",
           "format": "email"
-        },
-        "civility": {
-          "type": "string",
-          "description": "Civility of the recipient (e.g., Monsieur, Madame)."
         },
         "firstName": {
           "type": "string",
@@ -26,11 +22,15 @@
         "lastName": {
           "type": "string",
           "description": "Last name of the recipient."
+        },
+        "civility": {
+          "type": "string",
+          "description": "Civility of the recipient (e.g., Monsieur, Madame)."
         }
       },
       "required": [
         "id",
-        "email",
+        "emailAddress",
         "firstName",
         "lastName"
       ]
@@ -39,7 +39,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Appointment",
       "type": "object",
-      "description": "Represents an appointment scheduled for a recipient.",
+      "description": "Represents an appointment or event associated with a recipient.",
       "properties": {
         "id": {
           "type": "string",
@@ -49,102 +49,92 @@
           "type": "string",
           "description": "Reference to Recipient. (Relationship: Recipient 1:N Appointment)"
         },
-        "type": {
+        "appointmentType": {
           "type": "string",
-          "description": "Type of appointment (e.g., SUIVI, DIHS)."
-        },
-        "formation": {
-          "type": "string",
-          "description": "The formation or course associated with the appointment (e.g., LIKE FORMATION)."
+          "description": "Type of appointment (e.g., SUIVI DIHS, LIKE FORMATION)."
         },
         "appointmentDateTime": {
           "type": "string",
           "description": "Date and time of the appointment.",
           "format": "date-time"
         },
-        "mailSentDate": {
-          "type": "string",
-          "description": "Date when the email confirmation was sent.",
-          "format": "date-time"
-        },
-        "mailStatus": {
-          "type": "string",
-          "description": "Status of the email (e.g., Sent, Failed)."
-        },
         "platform": {
           "type": "string",
-          "description": "Platform for the formation."
+          "description": "The platform that the training will be on"
         },
-        "trainerName": {
+        "statusMail": {
           "type": "string",
-          "description": "The name of the trainer."
+          "description": "The status of the email"
         }
       },
       "required": [
         "id",
         "recipientId",
-        "type",
         "appointmentDateTime"
       ]
     },
-    "EmailTemplate": {
+    "Trainer": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "EmailTemplate",
+      "title": "Trainer",
       "type": "object",
-      "description": "Represents a template for emails sent, allowing for dynamic content generation.",
+      "description": "Represents a trainer associated with an appointment",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the email template."
+          "description": "Unique identifier for the trainer."
         },
-        "templateName": {
+        "firstName": {
           "type": "string",
-          "description": "Name of the template for easy identification."
+          "description": "First name of the trainer."
         },
-        "subject": {
+        "lastName": {
           "type": "string",
-          "description": "Subject line of the email."
-        },
-        "body": {
-          "type": "string",
-          "description": "The text and html content of the email body."
+          "description": "Last name of the trainer."
         }
       },
       "required": [
         "id",
-        "templateName",
-        "subject",
-        "body"
+        "firstName",
+        "lastName"
       ]
     },
-    "ExcelImport": {
+    "EmailLog": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ExcelImport",
+      "title": "EmailLog",
       "type": "object",
-      "description": "Represents the imported Excel file and its metadata.",
+      "description": "Represents a log of sent emails.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Excel import record."
+          "description": "Unique identifier for the email log entry."
         },
-        "filename": {
+        "recipientId": {
           "type": "string",
-          "description": "Name of the imported Excel file."
+          "description": "Reference to Recipient. (Relationship: Recipient 1:N EmailLog)"
         },
-        "uploadDate": {
+        "appointmentId": {
           "type": "string",
-          "description": "Date and time when the Excel file was uploaded.",
+          "description": "Reference to Appointment. (Relationship: Appointment 1:N EmailLog)"
+        },
+        "sentDateTime": {
+          "type": "string",
+          "description": "Date and time the email was sent.",
           "format": "date-time"
+        },
+        "emailContent": {
+          "type": "string",
+          "description": "Content of the email sent."
         },
         "status": {
           "type": "string",
-          "description": "Import status (e.g., Pending, Completed, Failed)."
+          "description": "Status of the email sending process (e.g., sent, failed)."
         }
       },
       "required": [
         "id",
-        "filename",
-        "uploadDate",
+        "recipientId",
+        "sentDateTime",
+        "emailContent",
         "status"
       ]
     }
@@ -158,82 +148,90 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}/excelImports/{excelImportId}",
-        "definition": {
-          "entityName": "ExcelImport",
-          "schema": {
-            "$ref": "#/backend/entities/ExcelImport"
-          },
-          "description": "Stores Excel import records for each user.  Path-based ownership ensures only the user who uploaded the excel import has access to it.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the excel import."
-            },
-            {
-              "name": "excelImportId",
-              "description": "The ID of the excel import document."
-            }
-          ]
-        }
-      },
-      {
         "path": "/users/{userId}/recipients/{recipientId}",
         "definition": {
           "entityName": "Recipient",
           "schema": {
             "$ref": "#/backend/entities/Recipient"
           },
-          "description": "Stores recipient data for each user. Path-based ownership ensures only the owning user has access. Includes denormalized `excelImportId` for associating recipients to their import.",
+          "description": "Stores recipient information. Path-based ownership ensures only the user can access their recipients.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the recipient data."
+              "description": "The ID of the authenticated user."
             },
             {
               "name": "recipientId",
-              "description": "The ID of the recipient document."
+              "description": "The unique ID of the recipient."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/appointments/{appointmentId}",
+        "path": "/users/{userId}/recipients/{recipientId}/appointments/{appointmentId}",
         "definition": {
           "entityName": "Appointment",
           "schema": {
             "$ref": "#/backend/entities/Appointment"
           },
-          "description": "Stores appointment data for each user. Path-based ownership ensures only the owning user has access. Includes denormalized recipient information (recipientId) and excelImportId.",
+          "description": "Stores appointment information for a specific recipient. Path-based ownership ensures only the user can access their recipient's appointments.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the appointment."
+              "description": "The ID of the authenticated user."
+            },
+            {
+              "name": "recipientId",
+              "description": "The unique ID of the recipient."
             },
             {
               "name": "appointmentId",
-              "description": "The ID of the appointment document."
+              "description": "The unique ID of the appointment."
             }
           ]
         }
       },
       {
-        "path": "/emailTemplates/{emailTemplateId}",
+        "path": "/users/{userId}/recipients/{recipientId}/emailLogs/{emailLogId}",
         "definition": {
-          "entityName": "EmailTemplate",
+          "entityName": "EmailLog",
           "schema": {
-            "$ref": "#/backend/entities/EmailTemplate"
+            "$ref": "#/backend/entities/EmailLog"
           },
-          "description": "Stores email templates. Consider adding a `ownerId` or `members` map, or segregating into user-specific subcollections `/users/{userId}/emailTemplates/{emailTemplateId}`.",
+          "description": "Stores email log information for a specific recipient. Path-based ownership ensures only the user can access their recipient's email logs.",
           "params": [
             {
-              "name": "emailTemplateId",
-              "description": "The ID of the email template document."
+              "name": "userId",
+              "description": "The ID of the authenticated user."
+            },
+            {
+              "name": "recipientId",
+              "description": "The unique ID of the recipient."
+            },
+            {
+              "name": "emailLogId",
+              "description": "The unique ID of the email log."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/trainers/{trainerId}",
+        "definition": {
+          "entityName": "Trainer",
+          "schema": {
+            "$ref": "#/backend/entities/Trainer"
+          },
+          "description": "Stores information about trainers. Publicly accessible.",
+          "params": [
+            {
+              "name": "trainerId",
+              "description": "The unique ID of the trainer."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the 'Mail Pilot' application, focusing on importing recipient data from Excel files, managing appointments, sending personalized emails, and leveraging an LLM for dynamic email content generation. The structure prioritizes authorization independence and enables secure list operations. The top-level collections include `users`, `excelImports`, `recipients`, `appointments`, and `emailTemplates`.  Access control is managed primarily through path-based ownership for user-specific data and denormalization where needed. The structure enables Authorization Independence (CRITICAL) and supports the required QAPs (using segregation and/or membership models).\n\n*   `/users/{userId}/excelImports/{excelImportId}`: Allows users to manage their Excel import records. Security rules ensure only the user who created the excel import has access to it.\n*   `/users/{userId}/recipients/{recipientId}`:  Enables management of recipient data. Security rules enforce that only the user associated with the recipient has access to it. Includes denormalized `excelImportId` for associating recipients to their import.\n*   `/users/{userId}/appointments/{appointmentId}`:  Allows users to manage appointments.  Includes denormalized recipient information (recipientId) and excelImportId. Security rules ensure only the user has access.\n*   `/emailTemplates/{emailTemplateId}`:  A global collection for managing email templates. This collection might require more complex access control if template visibility needs to be restricted. Consider adding a `ownerId` or `members` map, or segregating into user-specific subcollections `/users/{userId}/emailTemplates/{emailTemplateId}`."
+    "reasoning": "The Firestore data structure is designed to support the Mail Pilot application's requirements, focusing on secure data access, scalability, and ease of debugging. The primary goal is to facilitate the efficient import of Excel data, personalized email composition, and email sending, all while maintaining a clear and secure authorization model.\n\n**Authorization Independence:** The structure prioritizes authorization independence to enable atomic operations and simplify security rules.  This is primarily achieved through path-based ownership for Recipients and their associated data (Appointments, EmailLogs).\n\n**Structural Segregation:** Data with different access requirements is segregated into separate collections, simplifying security rules and ensuring that each collection has a homogeneous security posture.  For example, recipient-specific data is stored under the `/users/{userId}` path.\n\n**Access Modeling:**\n*   **Private User Data:** Uses path-based ownership for user-related data. Recipients and their related Appointments and EmailLogs are stored under `/users/{userId}`, making security rules straightforward. The system relies solely on `request.auth.uid`.\n*   **QAPs (Rules Are Not Filters):** The structure enables secure `list` operations by using path-based ownership. Listing recipients, appointments, or email logs can be done securely by scoping the query to the current user's path (`/users/{userId}`).\n\n**Data Clarity and Predictability:** The structure enforces clear naming conventions and explicit state modeling to improve debuggability and maintainability. Field names are semantic, and wildcards are descriptive."
   }
 }

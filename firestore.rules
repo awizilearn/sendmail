@@ -1,30 +1,40 @@
 /**
- * Core Philosophy: This ruleset enforces a strict user-ownership model where all user-generated data
- * is segregated into user-specific subcollections. This "data silo" approach ensures that a user can only ever
- * access their own information, providing strong security and privacy by default.
+ * This ruleset enforces a strict user-ownership security model. All user-generated
+ * content (Recipients, Appointments, EmailLogs) is stored in a private data tree
+ * under /users/{userId}, ensuring that users can only access their own data.
  *
- * Data Structure: The core data is organized under the `/users/{userId}` path. Each user's
- * `excelImports`, `recipients`, and `appointments` are stored in dedicated subcollections within their
- * user document tree. A global `/emailTemplates` collection is also present, which is publicly readable.
+ * Core Philosophy:
+ * The security model is built on path-based authorization. A user's unique ID
+ * ({userId}) in the document path is the primary gatekeeper for all data access,
+ * making the rules simple, performant, and highly secure.
+ *
+ * Data Structure:
+ * - /users/{userId}/recipients/{recipientId}
+ * - /users/{userId}/recipients/{recipientId}/appointments/{appointmentId}
+ * - /users/{userId}/recipients/{recipientId}/emailLogs/{emailLogId}
+ * - /trainers/{trainerId}
  *
  * Key Security Decisions:
- * - Strict Ownership: All collections under `/users/{userId}` are only accessible by the authenticated user
- *   whose UID matches the `{userId}` in the path. This prevents any user from accessing another user's data.
- * - No User Listing: The rules do not provide a path for `/users`, effectively preventing clients from
- *   listing all users in the database.
- * - Public Templates: The `/emailTemplates` collection is publicly readable to allow all clients to access
- *   them, but writes are disabled pending a schema update to include an ownership field. This is a secure default.
- * - Denormalization for Authorization: This ruleset primarily uses path-based security (structural segregation),
- *   which is highly performant. The path `/users/{userId}` itself provides the ownership context, eliminating
- *   the need for extra `get()` calls or denormalized `ownerId` fields on child documents.
+ * - User Data Isolation: All access to paths starting with /users/{userId} requires
+ *   the authenticated user's UID to match the {userId} in the path. This
+ *   prevents any user from reading or writing another user's data.
+ * - Public Read-Only Data: The `/trainers` collection is public for anyone to read,
+ *   but client-side writes are disabled to protect data integrity. It is assumed
+ *   this data is managed by a trusted backend service.
+ * - Relational Integrity: On creation, subcollection documents (like Appointments)
+ *   must contain a reference ID back to their parent document (e.g., a `recipientId`)
+ *   that matches the ID in the path. This field is enforced as immutable on update.
+ * - Denormalization for Authorization: The path-based ownership model is a form of
+ *   denormalization that avoids costly `get()` calls in security rules. The
+ *   authorization context is directly available in the path itself.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     // Helper Functions
-    // --------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
 
     /**
      * Checks if the user is authenticated.
@@ -34,49 +44,61 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the currently authenticated user's UID matches the provided userId.
-     * This is the foundation of the user-ownership model.
-     * @param userId The user ID to check against, typically from the path.
+     * Checks if the authenticated user's ID matches the provided userId from the path.
+     * This is the core of the user ownership model.
      */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * For update/delete operations, checks for ownership AND that the document exists.
-     * This prevents unauthorized writes to non-existent paths.
-     * @param userId The user ID to check against, typically from the path.
+     * For update/delete operations, confirms ownership AND that the document exists.
+     * This prevents modifying or deleting documents that do not exist.
      */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
-
-    // --------------------------------------------------------------------------------
-    // User Data Subcollections
-    // All data nested under a user's ID is owned exclusively by that user.
-    // --------------------------------------------------------------------------------
-
+    
     /**
-     * @description Controls access to a user's Excel import records.
-     * @path /users/{userId}/excelImports/{excelImportId}
-     * @allow A signed-in user (auth.uid='user123') creating their own import record at `/users/user123/excelImports/importABC`. (create)
-     * @deny A different user (auth.uid='user456') trying to read an import record at `/users/user123/excelImports/importABC`. (get)
-     * @principle Restricts access to a user's own data tree, enforcing a strict "data silo" for each user.
+     * On create, validates that the new appointment's recipientId field
+     * matches the recipientId in the document path for relational integrity.
      */
-    match /users/{userId}/excelImports/{excelImportId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+    function isValidAppointmentCreate(recipientId) {
+      return request.resource.data.recipientId == recipientId;
+    }
+    
+    /**
+     * On update, ensures the appointment's recipientId cannot be changed.
+     */
+    function isImmutableAppointmentFields() {
+      return request.resource.data.recipientId == resource.data.recipientId;
+    }
+    
+    /**
+     * On create, validates that the new email log's recipientId field
+     * matches the recipientId in the document path for relational integrity.
+     */
+    function isValidEmailLogCreate(recipientId) {
+      return request.resource.data.recipientId == recipientId;
+    }
+    
+    /**
+     * On update, ensures the email log's recipientId cannot be changed.
+     */
+    function isImmutableEmailLogFields() {
+      return request.resource.data.recipientId == resource.data.recipientId;
     }
 
+    // ------------------------------------------------------------------------
+    // User Data Rules
+    // ------------------------------------------------------------------------
+
     /**
-     * @description Controls access to a user's recipient data.
+     * @description Controls access to a user's collection of recipients.
      * @path /users/{userId}/recipients/{recipientId}
-     * @allow A signed-in user (auth.uid='user123') listing their own recipients at `/users/user123/recipients`. (list)
-     * @deny An anonymous user trying to create a recipient record. (create)
-     * @principle Restricts access to a user's own data tree, enforcing a strict "data silo" for each user.
+     * @allow User 'user_abc' can (create) a new recipient in their own subcollection `/users/user_abc/recipients/new_recipient`.
+     * @deny User 'user_xyz' cannot (get) a recipient from another user's data at `/users/user_abc/recipients/some_recipient`.
+     * @principle Restricts access to a user's own data tree using path-based ownership.
      */
     match /users/{userId}/recipients/{recipientId} {
       allow get: if isOwner(userId);
@@ -84,39 +106,54 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Controls access to a recipient's appointments. Access is inherited from the parent user.
+       * @path /users/{userId}/recipients/{recipientId}/appointments/{appointmentId}
+       * @allow User 'user_abc' can (list) all appointments for their recipient at `/users/user_abc/recipients/rec_123/appointments`.
+       * @deny An unauthenticated user cannot (create) an appointment at `/users/user_abc/recipients/rec_123/appointments/appt_456`.
+       * @principle Enforces path-based ownership and validates relational integrity between parent and child documents on create.
+       */
+      match /appointments/{appointmentId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidAppointmentCreate(recipientId);
+        allow update: if isExistingOwner(userId) && isImmutableAppointmentFields();
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Controls access to a recipient's email logs. Access is inherited from the parent user.
+       * @path /users/{userId}/recipients/{recipientId}/emailLogs/{emailLogId}
+       * @allow User 'user_abc' can (delete) an email log for their recipient at `/users/user_abc/recipients/rec_123/emailLogs/log_789`.
+       * @deny User 'user_xyz' cannot (update) an email log at `/users/user_abc/recipients/rec_123/emailLogs/log_789`.
+       * @principle Enforces path-based ownership and validates relational integrity between parent and child documents on create.
+       */
+      match /emailLogs/{emailLogId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidEmailLogCreate(recipientId);
+        allow update: if isExistingOwner(userId) && isImmutableEmailLogFields();
+        allow delete: if isExistingOwner(userId);
+      }
     }
 
+    // ------------------------------------------------------------------------
+    // Public Data Rules
+    // ------------------------------------------------------------------------
+    
     /**
-     * @description Controls access to a user's appointment data.
-     * @path /users/{userId}/appointments/{appointmentId}
-     * @allow A signed-in user (auth.uid='user123') updating their own appointment at `/users/user123/appointments/apptXYZ`. (update)
-     * @deny A different user (auth.uid='user456') trying to delete an appointment at `/users/user123/appointments/apptXYZ`. (delete)
-     * @principle Restricts access to a user's own data tree, enforcing a strict "data silo" for each user.
+     * @description Controls access to the public collection of trainers.
+     * @path /trainers/{trainerId}
+     * @allow Any user, including unauthenticated ones, can (get) a trainer's document at `/trainers/trainer_123`.
+     * @deny Any user, including authenticated ones, cannot (create) a new trainer document. This must be done via a backend admin SDK.
+     * @principle Allows public read access for globally shared data while denying all client-side writes to maintain data integrity.
      */
-    match /users/{userId}/appointments/{appointmentId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
-
-    // --------------------------------------------------------------------------------
-    // Global Collections
-    // --------------------------------------------------------------------------------
-
-    /**
-     * @description Controls access to the global collection of email templates.
-     * @path /emailTemplates/{emailTemplateId}
-     * @allow Any user, signed-in or anonymous, reading a template at `/emailTemplates/welcomeTemplate`. (get, list)
-     * @deny Any user trying to create a new template. Writes are disabled until an ownership model is defined. (create)
-     * @principle Allows public read access for shared resources, but locks down all write operations for security until a clear ownership schema (e.g., an `ownerId` field) is added to the documents.
-     */
-    match /emailTemplates/{emailTemplateId} {
+    match /trainers/{trainerId} {
       allow get: if true;
       allow list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'EmailTemplate' entity is missing an 'ownerId' or 'authorId' field.
-      // Writes are disabled to prevent any user from modifying shared templates.
+      // CRITICAL: Cannot implement owner-only writes. The 'Trainer' entity is missing an 'ownerId' or 'authorId' field.
+      // Disabling all client-side writes is the most secure default. Manage this data with a trusted backend service.
       allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
       allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
       allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
