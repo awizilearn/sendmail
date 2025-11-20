@@ -18,6 +18,19 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const addWorkingDays = (date: Date, days: number): Date => {
+    const newDate = new Date(date);
+    let added = 0;
+    while (added < days) {
+      newDate.setDate(newDate.getDate() + 1);
+      const dayOfWeek = newDate.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Sunday, 6 = Saturday
+        added++;
+      }
+    }
+    return newDate;
+  };
+
   const processFile = (file: File) => {
     setLoading(true);
     setFileName(file.name);
@@ -40,6 +53,8 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
         }
 
         const headers = jsonData[0] as string[];
+        const rdvDate = addWorkingDays(new Date(), 4);
+
         const rows = jsonData.slice(1).map(rowArray => {
           const recipient: MailRecipient = {};
           (rowArray as (string|number|Date)[]).forEach((cell, index) => {
@@ -51,6 +66,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
                 }
             }
           });
+          recipient['Date du RDV'] = rdvDate.toLocaleDateString();
           return recipient;
         });
 
