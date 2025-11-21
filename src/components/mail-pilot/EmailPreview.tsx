@@ -20,6 +20,23 @@ export default function EmailPreview({ subject, body, data }: EmailPreviewProps)
     
     return processedText.replace(placeholderRegex, (match, key) => {
       const trimmedKey = key.trim();
+      
+      // Custom logic for "Civilité"
+      if (trimmedKey === 'Civilité') {
+        const civility = String(data[trimmedKey]).toLowerCase();
+        if (civility === 'mr' || civility === 'm.') {
+          return 'monsieur';
+        }
+        if (civility === 'mme') {
+          return 'madame';
+        }
+        if (civility === 'mlle') {
+          return 'mademoiselle';
+        }
+        // Fallback for other values
+        return data[trimmedKey] !== undefined ? String(data[trimmedKey]) : match;
+      }
+
       return data[trimmedKey] !== undefined ? String(data[trimmedKey]) : match;
     });
   };
