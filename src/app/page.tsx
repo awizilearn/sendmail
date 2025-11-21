@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import * as XLSX from 'xlsx';
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
+import UserGuide from "@/components/mail-pilot/UserGuide";
 
 // This will be our data structure for a row
 export type MailRecipient = { [key: string]: string | number };
@@ -74,6 +75,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Header onLogout={handleLogout} userEmail={user.email} />
       <main className="flex-1 container mx-auto p-4 md:p-8 space-y-8">
+        <UserGuide />
         <ExcelImporter onDataImported={handleDataImported} />
         
         {recipients.length > 0 && (
