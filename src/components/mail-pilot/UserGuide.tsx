@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -22,7 +23,7 @@ export default function UserGuide() {
                     </p>
                     <ul>
                         <li><strong>Importation de données :</strong> Importez facilement des fichiers .xlsx, .xls ou .csv contenant les informations de vos destinataires.</li>
-                        <li><strong>Personnalisation d'e-mails :</strong> Utilisez des variables (par exemple, `{{Nom}}`) dans l'objet et le corps de votre e-mail pour insérer dynamiquement des données provenant de votre fichier.</li>
+                        <li><strong>Personnalisation d'e-mails :</strong> Utilisez des variables (par exemple, `{'{{Bénéficiare}}'}`) dans l'objet et le corps de votre e-mail pour insérer dynamiquement des données provenant de votre fichier.</li>
                         <li><strong>Prévisualisation en direct :</strong> Sélectionnez un destinataire pour voir instantanément à quoi ressemblera son e-mail personnalisé.</li>
                         <li><strong>Configuration SMTP :</strong> Configurez vos propres paramètres de serveur SMTP pour envoyer des e-mails directement depuis l'application.</li>
                         <li><strong>Prévention des doublons :</strong> Le système se souvient des e-mails déjà envoyés pour un rendez-vous donné, évitant ainsi les envois multiples.</li>
@@ -52,7 +53,7 @@ export default function UserGuide() {
                     <div>
                         <h4><PencilRuler className="inline-block w-5 h-5 mr-2"/>Étape 3 : Composer l'E-mail</h4>
                         <p>
-                            Rédigez le sujet et le corps de votre e-mail. Utilisez le menu déroulant "Insérer une variable" pour ajouter des champs de votre fichier Excel dans votre modèle. Par exemple, si vous insérez `{{Bénéficiare}}`, il sera remplacé par le nom du destinataire. L'aperçu ci-dessous se met à jour en temps réel.
+                            Rédigez le sujet et le corps de votre e-mail. Utilisez le menu déroulant "Insérer une variable" pour ajouter des champs de votre fichier Excel dans votre modèle. Par exemple, si vous insérez `{'{{Bénéficiare}}'}`, il sera remplacé par le nom du destinataire. L'aperçu ci-dessous se met à jour en temps réel.
                         </p>
                     </div>
                     <div>
