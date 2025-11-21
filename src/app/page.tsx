@@ -21,7 +21,7 @@ export default function Home() {
   const [headers, setHeaders] = useState<string[]>([]);
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
   const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre {{formateur/formatrice}} {{PLATEFORME}}`);
-  const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},\n\nNous vous confirmons votre prochain rendez-vous pour la continuité de votre formation : {{Formation}}.\n\nLe rendez-vous est prévu pour le {{Date du RDV}} de {{Heure RDV}} à {{Fin RDV}}.\n\nVeuillez tenir informé votre {{formateur/formatrice}} en cas d'empêchement.\n\nCordialement,\nL'équipe de formation`);
+  const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},\n\nNous vous confirmons votre prochain rendez-vous pour la continuité de votre formation..\n\nLe rendez-vous est prévu pour le {{Date du RDV}} de {{Heure RDV}} à {{Fin RDV}}.\n\nVeuillez tenir informé votre {{formateur/formatrice}} en cas d'empêchement.\n\nCordialement,\nL'équipe de formation`);
 
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
