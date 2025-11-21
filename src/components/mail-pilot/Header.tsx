@@ -1,4 +1,4 @@
-import { LogOut, Mailbox, User } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import React from 'react';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
@@ -9,6 +9,16 @@ type HeaderProps = {
     userEmail?: string | null;
 }
 
+const NsConseilLogo = () => (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1.5" y="1.5" width="29" height="29" rx="4" fill="#1E2A47"/>
+        <g transform="translate(0 -2)">
+            <path d="M16 4L26 16L16 28L6 16L16 4Z" stroke="#E6A23C" strokeWidth="2"/>
+            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="#E5E7EB">NS</text>
+        </g>
+    </svg>
+)
+
 export default function Header({ onLogout, userEmail }: HeaderProps) {
   const getInitials = (email?: string | null) => {
     if (!email) return '?';
@@ -16,14 +26,14 @@ export default function Header({ onLogout, userEmail }: HeaderProps) {
   };
     
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur-sm" style={{borderColor: 'hsl(var(--border))'}}>
       <div className="container flex h-16 items-center">
         <div className="mr-4 flex items-center">
-            <div className="bg-primary text-primary-foreground p-2 rounded-lg shadow-md mr-3">
-              <Mailbox className="h-6 w-6" />
+            <div className="mr-3">
+              <NsConseilLogo />
             </div>
-            <h1 className="text-2xl font-bold text-primary">
-              Mail Pilot
+            <h1 className="text-2xl font-bold" style={{color: 'hsl(var(--primary))'}}>
+              NS CONSEIL
             </h1>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
