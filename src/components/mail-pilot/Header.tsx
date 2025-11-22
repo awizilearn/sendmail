@@ -3,10 +3,10 @@ import React from 'react';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useUser } from '@/firebase';
 
 type HeaderProps = {
-    onLogout: () => void;
-    userEmail?: string | null;
+    onLogout?: () => void;
 }
 
 const NsConseilLogo = () => (
@@ -19,10 +19,13 @@ const NsConseilLogo = () => (
     </svg>
 )
 
-export default function Header({ onLogout, userEmail }: HeaderProps) {
-  const getInitials = (email?: string | null) => {
-    if (!email) return '?';
-    return email.charAt(0).toUpperCase();
+export default function Header({ onLogout }: HeaderProps) {
+  const { user } = useUser();
+
+  const getInitials = (email?: string | null, name?: string | null) => {
+    if (name) return name.charAt(0).toUpperCase();
+    if (email) return email.charAt(0).toUpperCase();
+    return '?';
   };
     
   return (
@@ -37,6 +40,7 @@ export default function Header({ onLogout, userEmail }: HeaderProps) {
             </h1>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
+           {user && onLogout && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -44,8 +48,8 @@ export default function Header({ onLogout, userEmail }: HeaderProps) {
                   className="relative h-9 w-9 rounded-full"
                 >
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src="#" alt="Avatar" />
-                    <AvatarFallback>{getInitials(userEmail)}</AvatarFallback>
+                    <AvatarImage src={user.photoURL || "#"} alt="Avatar" />
+                    <AvatarFallback>{getInitials(user.email, user.displayName)}</AvatarFallback>
                     <span className="absolute right-0 top-0 block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-white" />
                   </Avatar>
                 </Button>
@@ -54,10 +58,10 @@ export default function Header({ onLogout, userEmail }: HeaderProps) {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      Utilisateur Anonyme
+                      {user.displayName || (user.isAnonymous ? 'Utilisateur Anonyme' : 'Utilisateur')}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {userEmail || 'Non connecté'}
+                      {user.email || 'Non connecté'}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -68,6 +72,7 @@ export default function Header({ onLogout, userEmail }: HeaderProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+           )}
         </div>
       </div>
     </header>

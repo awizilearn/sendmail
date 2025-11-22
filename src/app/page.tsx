@@ -21,10 +21,10 @@ export default function Home() {
   const [recipients, setRecipients] = useState<MailRecipient[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
-  const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre formateur {{PLATEFORME}}`);
+  const [emailSubject, setEmailSubject] = useState(`{{Bénéficiare}}, votre {{Type de RDV}} avec {{Formateur/Formatrice}} est confirmé pour le {{Date du RDV}} à {{Heure RDV}}`);
   const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},
 
-Nous vous confirmons votre prochain rendez-vous pour la continuité de votre formation :
+Nous vous confirmons votre prochain rendez-vous pour la continuité de votre formation.
 Le {{Date du RDV}} de {{Heure RDV}} à {{Fin RDV}}.
 Veuillez tenir informé votre {{formateur/formatrice}} en cas d'empêchement.
 
@@ -80,7 +80,7 @@ Cordialement`);
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header onLogout={handleLogout} userEmail={user.email} />
+      <Header onLogout={handleLogout} />
       <main className="flex-1 container mx-auto p-4 md:p-8 space-y-8">
         <UserGuide />
         <ExcelImporter onDataImported={handleDataImported} />
