@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -35,9 +36,9 @@ type EmailComposerProps = {
 export default function EmailComposer({ 
   selectedRecipient, 
   headers,
-  subject,
+  subject: initialSubject,
   onSubjectChange,
-  body,
+  body: initialBody,
   onBodyChange
 }: EmailComposerProps) {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -45,26 +46,19 @@ export default function EmailComposer({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    values: { subject, body },
+    values: { subject: initialSubject, body: initialBody },
   });
 
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      onSubjectChange(value.subject || '');
-      onBodyChange(value.body || '');
-    });
-    return () => subscription.unsubscribe();
-  }, [form, onSubjectChange, onBodyChange]);
-
+  const subject = form.watch('subject');
+  const body = form.watch('body');
 
   useEffect(() => {
-    // Reset form if recipient is cleared
-    if (!selectedRecipient) {
-        form.reset({ subject, body });
-    } else {
-        form.reset({ subject, body });
-    }
-  }, [selectedRecipient, form, subject, body]);
+    onSubjectChange(subject);
+  }, [subject, onSubjectChange]);
+
+  useEffect(() => {
+    onBodyChange(body);
+  }, [body, onBodyChange]);
 
   const insertVariable = (variable: string) => {
     const textarea = document.querySelector('textarea[name="body"]') as HTMLTextAreaElement;

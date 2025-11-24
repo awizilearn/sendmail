@@ -26,6 +26,8 @@ export default function Home() {
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
   const [allRecipients, setAllRecipients] = useState<MailRecipient[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
+  
+  // State for subject and body is now managed by EmailComposer and SmtpSettings
   const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre formateur {{PLATEFORME}}`);
   const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},
 
@@ -34,6 +36,7 @@ Le {{Date du RDV}} de {{Heure RDV}} à {{Fin RDV}}.
 Veuillez tenir informé votre {{formateur/formatrice}} en cas d'empêchement.
 
 Cordialement`);
+
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -49,7 +52,12 @@ Cordialement`);
     setAllRecipients(data);
     setHeaders(sheetHeaders);
     if (data.length > 0 && !selectedRecipient) {
-      setSelectedRecipient(data[0]);
+      const currentSelected = data.find(d => d.id === selectedRecipient?.id);
+      if(currentSelected) {
+        setSelectedRecipient(currentSelected);
+      } else {
+        setSelectedRecipient(data[0]);
+      }
     } else if (data.length === 0) {
       setSelectedRecipient(null);
     }
@@ -99,7 +107,7 @@ Cordialement`);
               <EmailComposer 
                 key={selectedRecipient ? JSON.stringify(selectedRecipient) : 'empty'}
                 selectedRecipient={selectedRecipient}
-                headers={headers} 
+                headers={headers}
                 subject={emailSubject}
                 onSubjectChange={setEmailSubject}
                 body={emailBody}
