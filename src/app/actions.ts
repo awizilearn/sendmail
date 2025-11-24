@@ -102,15 +102,12 @@ export async function logSentEmail(userId: string, recipientId: string, appointm
       const logDocRef = doc(logCollectionRef);
       
       await setDoc(logDocRef, {
+        id: logDocRef.id,
         appointmentDate,
         sentDateTime: new Date().toISOString(),
         status: 'sent',
         recipientId: recipientId,
       });
-
-      // Also update the recipient doc to ensure it exists
-      const recipientDocRef = doc(firestore, 'users', userId, 'recipients', recipientId);
-      await setDoc(recipientDocRef, { id: recipientId }, { merge: true });
 
       return { success: true };
     } catch (error) {
@@ -135,4 +132,3 @@ export async function checkEmailSent(userId: string, recipientId: string, appoin
       return { sent: false, message: "Échec de la vérification de l'historique des e-mails dans Firestore." };
     }
 }
-

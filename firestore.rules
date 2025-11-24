@@ -138,14 +138,6 @@ service cloud.firestore {
         allow delete: if isExistingOwner(userId);
       }
     }
-
-    match /users/{userId}/emailLogs/{emailLogId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
     
     // ------------------------------------------------------------------------
     // Public Data Rules
@@ -169,4 +161,3 @@ service cloud.firestore {
     }
   }
 }
-

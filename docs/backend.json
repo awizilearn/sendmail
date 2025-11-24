@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Recipient": {
@@ -113,18 +112,14 @@
           "type": "string",
           "description": "Reference to Recipient. (Relationship: Recipient 1:N EmailLog)"
         },
-        "appointmentId": {
+        "appointmentDate": {
           "type": "string",
-          "description": "Reference to Appointment. (Relationship: Appointment 1:N EmailLog)"
+          "description": "Date of the appointment for which the email was sent."
         },
         "sentDateTime": {
           "type": "string",
           "description": "Date and time the email was sent.",
           "format": "date-time"
-        },
-        "emailContent": {
-          "type": "string",
-          "description": "Content of the email sent."
         },
         "status": {
           "type": "string",
@@ -134,8 +129,8 @@
       "required": [
         "id",
         "recipientId",
+        "appointmentDate",
         "sentDateTime",
-        "emailContent",
         "status"
       ]
     }

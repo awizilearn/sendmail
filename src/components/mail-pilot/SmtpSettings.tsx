@@ -165,7 +165,7 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
             continue;
         }
 
-        const recipientId = recipientEmail; // Use email as the recipient ID
+        const recipientId = String(recipient.id);
         const appointmentDate = String(recipient['Date du RDV']);
 
         const { sent } = await checkEmailSent(user.uid, recipientId, appointmentDate);
@@ -339,5 +339,3 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
     </div>
   );
 }
-
-    
