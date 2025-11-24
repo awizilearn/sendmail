@@ -134,7 +134,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
           variant: 'destructive',
-          title: 'Échec de l\'importation',
+          title: "Échec de l'importation",
           description: `Impossible de traiter le fichier Excel. ${errorMessage}`,
         });
         setFileName('');
@@ -146,7 +146,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
       toast({
         variant: 'destructive',
         title: 'Erreur de lecture du fichier',
-        description: 'Une erreur s\'est produite lors de la lecture du fichier.',
+        description: "Une erreur s'est produite lors de la lecture du fichier.",
       });
       setLoading(false);
       setFileName('');

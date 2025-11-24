@@ -23,7 +23,6 @@ export default function Home() {
   const firestore = useFirestore();
   const router = useRouter();
 
-  // State is now simplified. Most data is handled by child components.
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
   const [allRecipients, setAllRecipients] = useState<MailRecipient[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -78,7 +77,6 @@ Cordialement`);
     );
   }
 
-  // Get the recipients collection reference for the current user.
   const recipientsColRef = collection(firestore, 'users', user.uid, 'recipients');
 
   return (
@@ -89,34 +87,30 @@ Cordialement`);
         <ExcelImporter recipientsColRef={recipientsColRef} />
         
         <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="space-y-8">
-                <DataTable 
-                  recipientsColRef={recipientsColRef}
-                  onDataLoaded={handleDataLoaded}
-                  selectedRow={selectedRecipient}
-                  onRowSelect={handleRowSelect}
-                  onExport={handleExport}
-                />
-                <SmtpSettings 
-                  recipientCount={allRecipients.length}
-                  recipients={allRecipients}
-                  emailBody={emailBody}
-                  emailSubject={emailSubject}
-                />
-              </div>
-              <div className="lg:mt-0">
-                <EmailComposer 
-                  key={selectedRecipient ? JSON.stringify(selectedRecipient) : 'empty'}
-                  selectedRecipient={selectedRecipient}
-                  headers={headers} 
-                  subject={emailSubject}
-                  onSubjectChange={setEmailSubject}
-                  body={emailBody}
-                  onBodyChange={setEmailBody}
-                />
-              </div>
+          <CardContent className="p-4 sm:p-6 space-y-8">
+            <DataTable 
+              recipientsColRef={recipientsColRef}
+              onDataLoaded={handleDataLoaded}
+              selectedRow={selectedRecipient}
+              onRowSelect={handleRowSelect}
+              onExport={handleExport}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+              <EmailComposer 
+                key={selectedRecipient ? JSON.stringify(selectedRecipient) : 'empty'}
+                selectedRecipient={selectedRecipient}
+                headers={headers} 
+                subject={emailSubject}
+                onSubjectChange={setEmailSubject}
+                body={emailBody}
+                onBodyChange={setEmailBody}
+              />
+              <SmtpSettings 
+                recipientCount={allRecipients.length}
+                recipients={allRecipients}
+                emailBody={emailBody}
+                emailSubject={emailSubject}
+              />
             </div>
           </CardContent>
         </Card>
