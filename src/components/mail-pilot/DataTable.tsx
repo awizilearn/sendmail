@@ -1,10 +1,11 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Download, CheckCircle2, Trash2 } from 'lucide-react';
 import { useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { CollectionReference } from 'firebase/firestore';
+import * as XLSX from 'xlsx';
 
 import {
   Table,
@@ -38,24 +39,28 @@ type DataTableProps = {
   recipientsColRef: CollectionReference;
   onDataLoaded: (data: MailRecipient[], headers: string[]) => void;
   selectedRow: MailRecipient | null;
-  onRowSelect: (row: MailRecipient) => void;
-  onExport: () => void;
+  onRowSelect: (row: MailRecipient | null) => void;
 };
 
-export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow, onRowSelect, onExport }: DataTableProps) {
+export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow, onRowSelect }: DataTableProps) {
   const memoizedQuery = useMemoFirebase(() => recipientsColRef, [recipientsColRef]);
   const { data: recipients, isLoading, error } = useCollection<MailRecipient>(memoizedQuery);
   const { user } = useUser();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const headers = recipients && recipients.length > 0
-    ? Object.keys(recipients[0]).filter(key => key !== 'id')
-    : [];
+  const headers = useMemo(() => {
+    return recipients && recipients.length > 0
+      ? Object.keys(recipients[0]).filter(key => key !== 'id')
+      : [];
+  }, [recipients]);
 
   useEffect(() => {
-    onDataLoaded(recipients || [], headers);
-  }, [recipients, JSON.stringify(headers), onDataLoaded]);
+    if (!isLoading) {
+      onDataLoaded(recipients || [], headers);
+    }
+  }, [recipients, headers, isLoading, onDataLoaded]);
+  
 
   const handleClearData = async () => {
     if (!user) {
@@ -70,6 +75,7 @@ export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow,
         description: 'Tous les destinataires ont été supprimés.',
         className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
       });
+      onRowSelect(null);
     } else {
       toast({
         variant: 'destructive',
@@ -78,6 +84,14 @@ export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow,
       });
     }
     setIsDeleting(false);
+  };
+  
+  const handleExport = () => {
+    if (!recipients) return;
+    const worksheet = XLSX.utils.json_to_sheet(recipients);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Recipients");
+    XLSX.writeFile(workbook, "recipients.xlsx");
   };
 
   return (
@@ -115,7 +129,7 @@ export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow,
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Button variant="outline" size="sm" onClick={onExport} disabled={!recipients || recipients.length === 0}>
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={!recipients || recipients.length === 0}>
                 <Download className="mr-2 h-4 w-4" />
                 Exporter
             </Button>

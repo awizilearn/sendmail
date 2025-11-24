@@ -13,7 +13,6 @@ import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import UserGuide from "@/components/mail-pilot/UserGuide";
 import { collection } from "firebase/firestore";
-import * as XLSX from 'xlsx';
 
 export type MailRecipient = { [key: string]: string | number };
 
@@ -23,11 +22,11 @@ export default function Home() {
   const firestore = useFirestore();
   const router = useRouter();
 
-  const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
   const [allRecipients, setAllRecipients] = useState<MailRecipient[]>([]);
+  const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   
-  // State for subject and body is now managed by EmailComposer and SmtpSettings
+  // State for subject and body is now managed by EmailComposer
   const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre formateur {{PLATEFORME}}`);
   const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},
 
@@ -44,32 +43,24 @@ Cordialement`);
     }
   }, [user, isUserLoading, router]);
 
-  const handleRowSelect = (recipient: MailRecipient) => {
+  const handleRowSelect = (recipient: MailRecipient | null) => {
     setSelectedRecipient(recipient);
   };
 
-  const handleDataLoaded = (data: MailRecipient[], sheetHeaders: string[]) => {
-    setAllRecipients(data);
-    setHeaders(sheetHeaders);
-    if (data.length > 0) {
-      const currentSelected = data.find(d => d.id === selectedRecipient?.id);
-      if(currentSelected) {
-        setSelectedRecipient(currentSelected);
-      } else {
-        setSelectedRecipient(data[0]);
+  const handleRecipientsLoaded = (recipients: MailRecipient[], newHeaders: string[]) => {
+    setAllRecipients(recipients);
+    setHeaders(newHeaders);
+    
+    if (recipients.length > 0) {
+      const currentSelectedExists = recipients.some(r => r.id === selectedRecipient?.id);
+      if (!currentSelectedExists) {
+        setSelectedRecipient(recipients[0]);
       }
-    } else if (data.length === 0) {
+    } else {
       setSelectedRecipient(null);
     }
   };
-
-  const handleExport = () => {
-    const worksheet = XLSX.utils.json_to_sheet(allRecipients);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Recipients");
-    XLSX.writeFile(workbook, "recipients.xlsx");
-  };
-
+  
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
@@ -98,10 +89,9 @@ Cordialement`);
           <CardContent className="p-4 sm:p-6 space-y-8">
             <DataTable 
               recipientsColRef={recipientsColRef}
-              onDataLoaded={handleDataLoaded}
+              onDataLoaded={handleRecipientsLoaded}
               selectedRow={selectedRecipient}
               onRowSelect={handleRowSelect}
-              onExport={handleExport}
             />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
               <EmailComposer 
