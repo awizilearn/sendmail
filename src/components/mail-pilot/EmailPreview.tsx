@@ -15,15 +15,15 @@ export default function EmailPreview({ subject, body, data }: EmailPreviewProps)
     if (!data) return text;
     
     // Custom logic for "formateur/formatrice"
-    const formateurGender = data['Civilité Formateur'] === 'Mme' ? 'formatrice' : 'formateur';
+    const formateurGender = String(data['Civilité Formateur']).toLowerCase() === 'mme' ? 'formatrice' : 'formateur';
     let processedText = text.replace(/\{\{formateur\/formatrice\}\}/g, formateurGender);
     
     return processedText.replace(placeholderRegex, (match, key) => {
       const trimmedKey = key.trim();
       
       // Custom logic for "Civilité"
-      if (trimmedKey === 'Civilité') {
-        const civility = String(data[trimmedKey]).toLowerCase();
+      if (trimmedKey.toLowerCase() === 'civilité') {
+        const civility = String(data[trimmedKey] || data['Civilité'] || '').toLowerCase();
         if (civility === 'mr' || civility === 'm.') {
           return 'monsieur';
         }
