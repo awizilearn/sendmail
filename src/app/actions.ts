@@ -2,7 +2,7 @@
 'use server';
 
 import { generateConfirmationMessage, type ConfirmationMessageInput } from '@/ai/flows/confirmation-message-generation';
-import { initializeFirebase } from '@/firebase';
+import { initializeServerFirebase } from '@/firebase/server-init';
 import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import nodemailer from 'nodemailer';
 
@@ -96,7 +96,7 @@ export async function sendConfiguredEmail(
 }
 
 export async function logSentEmail(userId: string, recipientId: string, appointmentDate: string): Promise<{ success: boolean; message?: string }> {
-    const { firestore } = initializeFirebase();
+    const { firestore } = initializeServerFirebase();
     try {
       const logCollectionRef = collection(firestore, 'users', userId, 'recipients', recipientId, 'emailLogs');
       const logDocRef = doc(logCollectionRef);
@@ -120,7 +120,7 @@ export async function logSentEmail(userId: string, recipientId: string, appointm
 }
   
 export async function checkEmailSent(userId: string, recipientId: string, appointmentDate: string): Promise<{ sent: boolean; message?: string }> {
-    const { firestore } = initializeFirebase();
+    const { firestore } = initializeServerFirebase();
     try {
       const logsCollection = collection(firestore, 'users', userId, 'recipients', recipientId, 'emailLogs');
       const q = query(
