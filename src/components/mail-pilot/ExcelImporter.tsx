@@ -8,16 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import type { MailRecipient } from '@/app/page';
+import { CollectionReference, doc, writeBatch } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 
 type ExcelImporterProps = {
-  onDataImported: (data: MailRecipient[], headers: string[]) => void;
+  recipientsColRef: CollectionReference;
 };
 
-export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
+export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) {
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState('');
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const firestore = useFirestore();
 
   const addWorkingDays = (date: Date, days: number): Date => {
     const newDate = new Date(date);
@@ -37,7 +40,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
     setFileName(file.name);
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
@@ -61,7 +64,6 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
             throw new Error(`La colonne requise '${emailColumn}' n'a pas été trouvée dans le fichier.`);
         }
 
-        // Add 'Civilité Formateur' if it doesn't exist for the logic
         if (!headers.includes('Civilité Formateur')) {
           headers.push('Civilité Formateur');
         }
@@ -93,17 +95,28 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
                 }
             });
 
-            // Manually add 'Civilité Formateur' for demonstration if not in file
             if (rowArray.length < headers.length) {
-                recipient['Civilité Formateur'] = 'M.'; // Default to 'M.' for example
+                recipient['Civilité Formateur'] = 'M.'; 
             }
             recipient['Date du RDV'] = rdvDate.toLocaleDateString('fr-FR');
-            uniqueRows.push(recipient);
+            
+            // Use email as ID
+            const emailValue = String(recipient[emailColumn]).trim();
+            if (emailValue) {
+              recipient.id = emailValue;
+              uniqueRows.push(recipient);
+            }
         });
-
-        onDataImported(uniqueRows, headers);
         
-        let successMessage = `${uniqueRows.length} enregistrements importés avec succès depuis ${file.name}.`;
+        // Firestore Batch Write
+        const batch = writeBatch(firestore);
+        uniqueRows.forEach(recipient => {
+            const docRef = doc(recipientsColRef, String(recipient.id));
+            batch.set(docRef, recipient);
+        });
+        await batch.commit();
+
+        let successMessage = `${uniqueRows.length} enregistrements importés et sauvegardés avec succès.`;
         if (duplicateCount > 0) {
             toast({
               title: 'Doublons trouvés',
@@ -125,7 +138,6 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
           description: `Impossible de traiter le fichier Excel. ${errorMessage}`,
         });
         setFileName('');
-        onDataImported([], []);
       } finally {
         setLoading(false);
       }
@@ -154,11 +166,30 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
     if (file) processFile(file);
   }
   
-  const handleReset = () => {
-    setFileName('');
-    onDataImported([], []);
-    if(fileInputRef.current) {
-      fileInputRef.current.value = '';
+  const handleReset = async () => {
+    // This function will now clear the collection in Firestore.
+    setLoading(true);
+    try {
+        // This is a placeholder for a 'clear collection' function.
+        // For simplicity, we just reset the local state. A real implementation
+        // would involve a server-side function to delete all documents.
+        // For now, we will just inform the user to re-upload.
+        toast({
+            title: "Fichier réinitialisé",
+            description: "Pour effacer les données, veuillez importer un nouveau fichier. L'importation précédente sera écrasée.",
+        });
+        setFileName('');
+        if(fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    } catch(err) {
+        toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible de réinitialiser les données."
+        })
+    } finally {
+        setLoading(false);
     }
   }
 

@@ -9,19 +9,25 @@ import DataTable from "@/components/mail-pilot/DataTable";
 import EmailComposer from "@/components/mail-pilot/EmailComposer";
 import SmtpSettings from "@/components/mail-pilot/SmtpSettings";
 import { Card, CardContent } from "@/components/ui/card";
-import * as XLSX from 'xlsx';
-import { useUser, useAuth } from "@/firebase";
+import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import UserGuide from "@/components/mail-pilot/UserGuide";
+import { collection } from "firebase/firestore";
+import * as XLSX from 'xlsx';
 
-// This will be our data structure for a row
 export type MailRecipient = { [key: string]: string | number };
 
 export default function Home() {
-  const [recipients, setRecipients] = useState<MailRecipient[]>([]);
-  const [headers, setHeaders] = useState<string[]>([]);
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+
+  // State is now simplified. Most data is handled by child components.
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
-  const [emailSubject, setEmailSubject] = useState(`{{Bénéficiare}}, votre {{Type de RDV}} avec {{Formateur/Formatrice}} est confirmé pour le {{Date du RDV}} à {{Heure RDV}}`);
+  const [allRecipients, setAllRecipients] = useState<MailRecipient[]>([]);
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre formateur {{PLATEFORME}}`);
   const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},
 
 Nous vous confirmons votre prochain rendez-vous pour la continuité de votre formation.
@@ -30,33 +36,28 @@ Veuillez tenir informé votre {{formateur/formatrice}} en cas d'empêchement.
 
 Cordialement`);
 
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
-
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
+  const handleRowSelect = (recipient: MailRecipient) => {
+    setSelectedRecipient(recipient);
+  };
 
-  const handleDataImported = (data: MailRecipient[], sheetHeaders: string[]) => {
-    setRecipients(data);
+  const handleDataLoaded = (data: MailRecipient[], sheetHeaders: string[]) => {
+    setAllRecipients(data);
     setHeaders(sheetHeaders);
-    if (data.length > 0) {
+    if (data.length > 0 && !selectedRecipient) {
       setSelectedRecipient(data[0]);
-    } else {
+    } else if (data.length === 0) {
       setSelectedRecipient(null);
     }
   };
 
-  const handleRowSelect = (recipient: MailRecipient) => {
-    setSelectedRecipient(recipient);
-  };
-  
   const handleExport = () => {
-    const worksheet = XLSX.utils.json_to_sheet(recipients);
+    const worksheet = XLSX.utils.json_to_sheet(allRecipients);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Recipients");
     XLSX.writeFile(workbook, "recipients.xlsx");
@@ -69,7 +70,7 @@ Cordialement`);
     }
   };
 
-  if (isUserLoading || !user) {
+  if (isUserLoading || !user || !firestore) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <p>Loading...</p>
@@ -77,48 +78,48 @@ Cordialement`);
     );
   }
 
+  // Get the recipients collection reference for the current user.
+  const recipientsColRef = collection(firestore, 'users', user.uid, 'recipients');
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Header onLogout={handleLogout} />
       <main className="flex-1 container mx-auto p-4 md:p-8 space-y-8">
         <UserGuide />
-        <ExcelImporter onDataImported={handleDataImported} />
+        <ExcelImporter recipientsColRef={recipientsColRef} />
         
-        {recipients.length > 0 && (
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-8">
-                  <DataTable 
-                    data={recipients} 
-                    headers={headers} 
-                    selectedRow={selectedRecipient} 
-                    onRowSelect={handleRowSelect} 
-                    onExport={handleExport}
-                  />
-                  <SmtpSettings 
-                    recipientCount={recipients.length}
-                    recipients={recipients}
-                    emailBody={emailBody}
-                    emailSubject={emailSubject}
-                  />
-                </div>
-                <div className="lg:mt-0">
-                  <EmailComposer 
-                    key={selectedRecipient ? JSON.stringify(selectedRecipient) : 'empty'}
-                    selectedRecipient={selectedRecipient} _
-                    headers={headers} 
-                    subject={emailSubject}
-                    onSubjectChange={setEmailSubject}
-                    body={emailBody}
-                    onBodyChange={setEmailBody}
-                  />
-                </div>
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-8">
+                <DataTable 
+                  recipientsColRef={recipientsColRef}
+                  onDataLoaded={handleDataLoaded}
+                  selectedRow={selectedRecipient}
+                  onRowSelect={handleRowSelect}
+                  onExport={handleExport}
+                />
+                <SmtpSettings 
+                  recipientCount={allRecipients.length}
+                  recipients={allRecipients}
+                  emailBody={emailBody}
+                  emailSubject={emailSubject}
+                />
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <div className="lg:mt-0">
+                <EmailComposer 
+                  key={selectedRecipient ? JSON.stringify(selectedRecipient) : 'empty'}
+                  selectedRecipient={selectedRecipient}
+                  headers={headers} 
+                  subject={emailSubject}
+                  onSubjectChange={setEmailSubject}
+                  body={emailBody}
+                  onBodyChange={setEmailBody}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
