@@ -104,7 +104,7 @@ export default function EmailComposer({
         form.setValue('body', currentBody + '\n\n' + result.message, { shouldValidate: true });
         toast({
           title: 'Suggestion IA ajoutée',
-          description: 'Un nouveau paragraphe a été ajouté au corps de l\'e-mail.',
+          description: "Un nouveau paragraphe a été ajouté au corps de l'e-mail.",
           className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
         });
       } else {

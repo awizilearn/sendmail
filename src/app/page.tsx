@@ -51,7 +51,7 @@ Cordialement`);
   const handleDataLoaded = (data: MailRecipient[], sheetHeaders: string[]) => {
     setAllRecipients(data);
     setHeaders(sheetHeaders);
-    if (data.length > 0 && !selectedRecipient) {
+    if (data.length > 0) {
       const currentSelected = data.find(d => d.id === selectedRecipient?.id);
       if(currentSelected) {
         setSelectedRecipient(currentSelected);

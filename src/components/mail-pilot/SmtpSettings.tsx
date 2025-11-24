@@ -191,7 +191,7 @@ export default function SmtpSettings({ recipients, recipientCount, emailSubject,
     setIsSending(false);
 
     toast({
-        title: 'Envoi d\'e-mails terminé',
+        title: "Envoi d'e-mails terminé",
         description: `Envoyés: ${sentCount}, Ignorés: ${skippedCount}, Échoués: ${failedCount}`,
         duration: 5000,
     });
