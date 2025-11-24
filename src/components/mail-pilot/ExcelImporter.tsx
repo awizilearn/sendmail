@@ -100,7 +100,6 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
             }
             recipient['Date du RDV'] = rdvDate.toLocaleDateString('fr-FR');
             
-            // Use email as ID
             const emailValue = String(recipient[emailColumn]).trim();
             if (emailValue) {
               recipient.id = emailValue;
@@ -108,7 +107,6 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
             }
         });
         
-        // Firestore Batch Write
         const batch = writeBatch(firestore);
         uniqueRows.forEach(recipient => {
             const docRef = doc(recipientsColRef, String(recipient.id));
@@ -134,7 +132,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
           variant: 'destructive',
-          title: "Échec de l'importation",
+          title: 'Échec de l\'importation',
           description: `Impossible de traiter le fichier Excel. ${errorMessage}`,
         });
         setFileName('');
