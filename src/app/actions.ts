@@ -135,3 +135,4 @@ export async function checkEmailSent(userId: string, recipientId: string, appoin
       return { sent: false, message: "Échec de la vérification de l'historique des e-mails dans Firestore." };
     }
 }
+
