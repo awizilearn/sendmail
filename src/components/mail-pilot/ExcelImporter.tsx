@@ -58,7 +58,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
 
         const headers = (jsonData[0] as string[]).map(h => h.trim());
         const emailColumn = 'adresse mail';
-        const emailColumnIndex = headers.indexOf(emailColumn);
+        const emailColumnIndex = headers.findIndex(h => h.trim().toLowerCase() === emailColumn);
         
         if (emailColumnIndex === -1) {
             throw new Error(`La colonne requise '${emailColumn}' n'a pas été trouvée dans le fichier.`);
@@ -68,7 +68,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
           headers.push('Civilité Formateur');
         }
         
-        const rdvDate = addWorkingDays(new Date(), 4);
+        const rdvDate = addWorkingDays(new Date(), 2);
         
         const uniqueRows: MailRecipient[] = [];
         const seenEmails = new Set<string>();
@@ -134,7 +134,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
           variant: 'destructive',
-          title: 'Échec de l\'importation',
+          title: "Échec de l'importation",
           description: `Impossible de traiter le fichier Excel. ${errorMessage}`,
         });
         setFileName('');
