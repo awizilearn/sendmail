@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useEffect } from 'react';
-import { Download, CheckCircle2 } from 'lucide-react';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useEffect, useState } from 'react';
+import { Download, CheckCircle2, Trash2 } from 'lucide-react';
+import { useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { CollectionReference } from 'firebase/firestore';
 
 import {
@@ -20,6 +20,19 @@ import { cn } from '@/lib/utils';
 import type { MailRecipient } from '@/app/page';
 import { Button } from '../ui/button';
 import { Skeleton } from '../ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { clearAllRecipients } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
 
 type DataTableProps = {
   recipientsColRef: CollectionReference;
@@ -32,6 +45,9 @@ type DataTableProps = {
 export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow, onRowSelect, onExport }: DataTableProps) {
   const memoizedQuery = useMemoFirebase(() => recipientsColRef, [recipientsColRef]);
   const { data: recipients, isLoading, error } = useCollection<MailRecipient>(memoizedQuery);
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const headers = recipients && recipients.length > 0
     ? Object.keys(recipients[0]).filter(key => key !== 'id')
@@ -41,6 +57,28 @@ export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow,
     onDataLoaded(recipients || [], headers);
   }, [recipients, headers, onDataLoaded]);
 
+  const handleClearData = async () => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié.' });
+      return;
+    }
+    setIsDeleting(true);
+    const result = await clearAllRecipients(user.uid);
+    if (result.success) {
+      toast({
+        title: 'Succès',
+        description: 'Tous les destinataires ont été supprimés.',
+        className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: result.message,
+      });
+    }
+    setIsDeleting(false);
+  };
 
   return (
     <div>
@@ -54,10 +92,34 @@ export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow,
               Sélectionnez un destinataire dans la liste pour prévisualiser son e-mail personnalisé. Total: {recipients?.length ?? 0} destinataires.
           </CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={onExport} disabled={!recipients || recipients.length === 0}>
-            <Download className="mr-2 h-4 w-4" />
-            Exporter
-        </Button>
+        <div className="flex gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={!recipients || recipients.length === 0 || isDeleting}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Vider
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Êtes-vous sûr de vouloir continuer ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible. Cela supprimera définitivement tous les destinataires de votre base de données.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClearData} disabled={isDeleting}>
+                    {isDeleting ? 'Suppression...' : 'Supprimer les données'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button variant="outline" size="sm" onClick={onExport} disabled={!recipients || recipients.length === 0}>
+                <Download className="mr-2 h-4 w-4" />
+                Exporter
+            </Button>
+        </div>
       </div>
         <ScrollArea className="h-72 w-full rounded-md border mt-4">
             <Table>

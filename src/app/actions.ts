@@ -3,7 +3,7 @@
 
 import { generateConfirmationMessage, type ConfirmationMessageInput } from '@/ai/flows/confirmation-message-generation';
 import { initializeServerFirebase } from '@/firebase/server-init';
-import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDocs, query, setDoc, where, writeBatch } from 'firebase/firestore';
 import nodemailer from 'nodemailer';
 
 export async function getAIGeneratedMessage(input: ConfirmationMessageInput): Promise<{success: boolean; message: string;}> {
@@ -130,5 +130,29 @@ export async function checkEmailSent(userId: string, recipientId: string, appoin
     } catch (error) {
       console.error('Failed to check email log:', error);
       return { sent: false, message: "Échec de la vérification de l'historique des e-mails dans Firestore." };
+    }
+}
+
+export async function clearAllRecipients(userId: string): Promise<{ success: boolean; message?: string }> {
+    const { firestore } = initializeServerFirebase();
+    try {
+        const recipientsRef = collection(firestore, 'users', userId, 'recipients');
+        const querySnapshot = await getDocs(recipientsRef);
+
+        if (querySnapshot.empty) {
+            return { success: true, message: 'Aucun destinataire à supprimer.' };
+        }
+
+        const batch = writeBatch(firestore);
+        querySnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to clear recipients:', error);
+        return { success: false, message: 'Échec de la suppression des destinataires dans Firestore.' };
     }
 }
