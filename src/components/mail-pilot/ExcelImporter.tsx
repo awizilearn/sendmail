@@ -134,7 +134,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
           variant: 'destructive',
-          title: "Échec de l'importation",
+          title: 'Échec de l\'importation',
           description: `Impossible de traiter le fichier Excel. ${errorMessage}`,
         });
         setFileName('');
@@ -166,30 +166,12 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
     if (file) processFile(file);
   }
   
-  const handleReset = async () => {
-    // This function will now clear the collection in Firestore.
-    setLoading(true);
-    try {
-        // This is a placeholder for a 'clear collection' function.
-        // For simplicity, we just reset the local state. A real implementation
-        // would involve a server-side function to delete all documents.
-        // For now, we will just inform the user to re-upload.
-        toast({
-            title: "Fichier réinitialisé",
-            description: "Pour effacer les données, veuillez importer un nouveau fichier. L'importation précédente sera écrasée.",
-        });
-        setFileName('');
-        if(fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    } catch(err) {
-        toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "Impossible de réinitialiser les données."
-        })
-    } finally {
-        setLoading(false);
+  const handleReset = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFileName('');
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
     }
   }
 

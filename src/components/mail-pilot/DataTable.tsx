@@ -91,8 +91,8 @@ export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow,
                         </TableRow>
                     ) : recipients?.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={headers.length || 1} className="text-center text-muted-foreground">
-                                Aucune donnée. Veuillez importer un fichier.
+                            <TableCell colSpan={headers.length || 1} className="text-center text-muted-foreground h-24">
+                                Aucune donnée. Veuillez importer un fichier pour commencer.
                             </TableCell>
                         </TableRow>
                     ) : (
