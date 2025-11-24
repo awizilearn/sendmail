@@ -55,7 +55,7 @@ export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow,
 
   useEffect(() => {
     onDataLoaded(recipients || [], headers);
-  }, [recipients, headers, onDataLoaded]);
+  }, [recipients, JSON.stringify(headers), onDataLoaded]);
 
   const handleClearData = async () => {
     if (!user) {
