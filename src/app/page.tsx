@@ -21,7 +21,7 @@ export default function Home() {
   const [recipients, setRecipients] = useState<MailRecipient[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
-  const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre formateur {{PLATEFORME}}`);
+  const [emailSubject, setEmailSubject] = useState(`{{Bénéficiare}}, votre {{Type de RDV}} avec {{Formateur/Formatrice}} est confirmé pour le {{Date du RDV}} à {{Heure RDV}}`);
   const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},
 
 Nous vous confirmons votre prochain rendez-vous pour la continuité de votre formation.
@@ -107,7 +107,7 @@ Cordialement`);
                 <div className="lg:mt-0">
                   <EmailComposer 
                     key={selectedRecipient ? JSON.stringify(selectedRecipient) : 'empty'}
-                    selectedRecipient={selectedRecipient} 
+                    selectedRecipient={selectedRecipient} _
                     headers={headers} 
                     subject={emailSubject}
                     onSubjectChange={setEmailSubject}
