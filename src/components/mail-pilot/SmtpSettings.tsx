@@ -41,18 +41,18 @@ const placeholderRegex = /\{\{([^}]+)\}\}/g;
 
 type SmtpSettingsProps = {
   recipients: MailRecipient[];
-  recipientCount: number;
   emailSubject: string;
   emailBody: string;
 };
 
-export default function SmtpSettings({ recipients, recipientCount, emailSubject, emailBody }: SmtpSettingsProps) {
+export default function SmtpSettings({ recipients, emailSubject, emailBody }: SmtpSettingsProps) {
   const [isSending, setIsSending] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [sendingProgress, setSendingProgress] = useState(0);
   const [sentCount, setSentCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
+  const recipientCount = recipients.length;
 
   const { toast } = useToast();
   const { user } = useUser();

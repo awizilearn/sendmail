@@ -37,13 +37,13 @@ import { useToast } from '@/hooks/use-toast';
 
 type DataTableProps = {
   recipientsColRef: CollectionReference;
-  onDataLoaded: (data: MailRecipient[]) => void;
+  onDataChange: (data: MailRecipient[]) => void;
   onHeadersLoaded: (headers: string[]) => void;
   selectedRow: MailRecipient | null;
   onRowSelect: (row: MailRecipient | null) => void;
 };
 
-export default function DataTable({ recipientsColRef, onDataLoaded, onHeadersLoaded, selectedRow, onRowSelect }: DataTableProps) {
+export default function DataTable({ recipientsColRef, onDataChange, onHeadersLoaded, selectedRow, onRowSelect }: DataTableProps) {
   const memoizedQuery = useMemoFirebase(() => recipientsColRef, [recipientsColRef]);
   const { data: recipients, isLoading, error } = useCollection<MailRecipient>(memoizedQuery);
   const { user } = useUser();
@@ -56,11 +56,14 @@ export default function DataTable({ recipientsColRef, onDataLoaded, onHeadersLoa
   }, [recipients]);
 
   useEffect(() => {
-    if (!isLoading) {
-      onDataLoaded(recipients || []);
-      onHeadersLoaded(headers);
+    if (recipients) {
+      onDataChange(recipients);
     }
-  }, [recipients, headers, isLoading, onDataLoaded, onHeadersLoaded]);
+  }, [recipients, onDataChange]);
+  
+  useEffect(() => {
+    onHeadersLoaded(headers);
+  }, [headers, onHeadersLoaded]);
   
 
   const handleClearData = async () => {
@@ -141,7 +144,7 @@ export default function DataTable({ recipientsColRef, onDataLoaded, onHeadersLoa
                 <TableHeader className="sticky top-0 bg-card shadow-sm z-10">
                     <TableRow>
                         {isLoading && !recipients ? (
-                            <TableHead>Chargement...</TableHead>
+                            Array.from({ length: 5 }).map((_, i) => <TableHead key={`skel-head-${i}`}><Skeleton className="h-4 w-24" /></TableHead>)
                         ) : (
                             headers.map((header) => (
                                 <TableHead key={header} className="whitespace-nowrap font-semibold bg-card">{header}</TableHead>
@@ -156,7 +159,7 @@ export default function DataTable({ recipientsColRef, onDataLoaded, onHeadersLoa
                                 {headers.length > 0 ? (
                                     headers.map(h => <TableCell key={h}><Skeleton className="h-4 w-full" /></TableCell>)
                                 ) : (
-                                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                                    Array.from({ length: 5 }).map((_, j) => <TableCell key={`skel-cell-${j}`}><Skeleton className="h-4 w-full" /></TableCell>)
                                 )}
                             </TableRow>
                         ))

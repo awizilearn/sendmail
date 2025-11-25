@@ -13,6 +13,7 @@ import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import UserGuide from "@/components/mail-pilot/UserGuide";
 import { collection } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 export type MailRecipient = { [key: string]: string | number };
 
@@ -21,12 +22,12 @@ export default function Home() {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
 
-  const [recipients, setRecipients] = useState<MailRecipient[]>([]);
+  const [recipientsForSmtp, setRecipientsForSmtp] = useState<MailRecipient[]>([]);
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   
-  // State for subject and body is now managed by EmailComposer
   const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre formateur {{PLATEFORME}}`);
   const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},
 
@@ -50,6 +51,7 @@ Cordialement`);
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
+      toast({ title: "Déconnexion réussie", description: "Vous avez été déconnecté." });
       router.push('/login');
     }
   };
@@ -75,7 +77,7 @@ Cordialement`);
           <CardContent className="p-4 sm:p-6 space-y-8">
             <DataTable 
               recipientsColRef={recipientsColRef}
-              onDataLoaded={setRecipients}
+              onDataChange={setRecipientsForSmtp}
               onHeadersLoaded={setHeaders}
               selectedRow={selectedRecipient}
               onRowSelect={handleRowSelect}
@@ -91,8 +93,7 @@ Cordialement`);
                 onBodyChange={setEmailBody}
               />
               <SmtpSettings 
-                recipientCount={recipients.length}
-                recipients={recipients}
+                recipients={recipientsForSmtp}
                 emailBody={emailBody}
                 emailSubject={emailSubject}
               />
