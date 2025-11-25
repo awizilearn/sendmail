@@ -74,7 +74,7 @@ Cordialement`);
         <ExcelImporter recipientsColRef={recipientsColRef} />
         
         <Card>
-          <CardContent className="p-4 sm:p-6 space-y-8">
+          <CardContent className="p-6 space-y-8">
             <DataTable 
               recipientsColRef={recipientsColRef}
               onDataChange={setRecipientsForSmtp}

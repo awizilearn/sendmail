@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { MailRecipient } from '@/app/page';
 import { CollectionReference, doc, writeBatch } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
+import { cn } from '@/lib/utils';
 
 type ExcelImporterProps = {
   recipientsColRef: CollectionReference;
@@ -18,6 +19,7 @@ type ExcelImporterProps = {
 export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) {
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const firestore = useFirestore();
@@ -35,7 +37,12 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
     return newDate;
   };
 
-  const processFile = (file: File) => {
+  const processFile = (file: File | null) => {
+    if (!file) {
+      setFileName('');
+      return;
+    }
+
     setLoading(true);
     setFileName(file.name);
 
@@ -154,14 +161,31 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) processFile(file);
+    processFile(file || null);
+    // Reset file input to allow re-uploading the same file
+    if (!file && fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
   
   const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
     event.stopPropagation();
+    setIsDragOver(false);
     const file = event.dataTransfer.files?.[0];
     if (file) processFile(file);
+  }
+
+  const handleDragEnter = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
   }
   
   const handleReset = (e: React.MouseEvent) => {
@@ -171,6 +195,10 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
     if (fileInputRef.current) {
         fileInputRef.current.value = '';
     }
+    toast({
+      title: 'Fichier retiré',
+      description: 'Vous pouvez maintenant télécharger un nouveau fichier.',
+    });
   }
 
   return (
@@ -184,7 +212,17 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-center w-full">
-          <label htmlFor="dropzone-file" onDrop={handleDrop} onDragOver={e => e.preventDefault()} className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-accent/50 border-border relative">
+          <label 
+            htmlFor="dropzone-file" 
+            onDrop={handleDrop} 
+            onDragOver={e => e.preventDefault()} 
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            className={cn(
+              "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-accent/50 border-border relative transition-colors",
+              isDragOver && "bg-accent/80 border-primary"
+            )}
+          >
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               {fileName ? <FileCheck2 className="w-8 h-8 mb-4 text-green-500" /> : <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />}
               {fileName ? (
@@ -198,7 +236,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
               {loading && <p className="text-xs text-primary mt-2">Traitement en cours...</p>}
             </div>
             <Input id="dropzone-file" type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx, .xls, .csv" disabled={loading} />
-            {fileName && (
+            {fileName && !loading && (
               <button onClick={handleReset} className="absolute top-2 right-2 p-1 rounded-full bg-muted/50 hover:bg-muted"><X className="w-4 h-4" /></button>
             )}
           </label>
