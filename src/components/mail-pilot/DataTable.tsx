@@ -37,12 +37,13 @@ import { useToast } from '@/hooks/use-toast';
 
 type DataTableProps = {
   recipientsColRef: CollectionReference;
-  onDataLoaded: (data: MailRecipient[], headers: string[]) => void;
+  onDataLoaded: (data: MailRecipient[]) => void;
+  onHeadersLoaded: (headers: string[]) => void;
   selectedRow: MailRecipient | null;
   onRowSelect: (row: MailRecipient | null) => void;
 };
 
-export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow, onRowSelect }: DataTableProps) {
+export default function DataTable({ recipientsColRef, onDataLoaded, onHeadersLoaded, selectedRow, onRowSelect }: DataTableProps) {
   const memoizedQuery = useMemoFirebase(() => recipientsColRef, [recipientsColRef]);
   const { data: recipients, isLoading, error } = useCollection<MailRecipient>(memoizedQuery);
   const { user } = useUser();
@@ -50,16 +51,16 @@ export default function DataTable({ recipientsColRef, onDataLoaded, selectedRow,
   const [isDeleting, setIsDeleting] = useState(false);
 
   const headers = useMemo(() => {
-    return recipients && recipients.length > 0
-      ? Object.keys(recipients[0]).filter(key => key !== 'id')
-      : [];
+    if (!recipients || recipients.length === 0) return [];
+    return Object.keys(recipients[0]).filter(key => key !== 'id');
   }, [recipients]);
 
   useEffect(() => {
     if (!isLoading) {
-      onDataLoaded(recipients || [], headers);
+      onDataLoaded(recipients || []);
+      onHeadersLoaded(headers);
     }
-  }, [recipients, headers, isLoading, onDataLoaded]);
+  }, [recipients, headers, isLoading, onDataLoaded, onHeadersLoaded]);
   
 
   const handleClearData = async () => {

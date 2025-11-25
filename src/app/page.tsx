@@ -22,7 +22,7 @@ export default function Home() {
   const firestore = useFirestore();
   const router = useRouter();
 
-  const [allRecipients, setAllRecipients] = useState<MailRecipient[]>([]);
+  const [recipients, setRecipients] = useState<MailRecipient[]>([]);
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   
@@ -45,20 +45,6 @@ Cordialement`);
 
   const handleRowSelect = (recipient: MailRecipient | null) => {
     setSelectedRecipient(recipient);
-  };
-
-  const handleRecipientsLoaded = (recipients: MailRecipient[], newHeaders: string[]) => {
-    setAllRecipients(recipients);
-    setHeaders(newHeaders);
-    
-    if (recipients.length > 0) {
-      const currentSelectedExists = recipients.some(r => r.id === selectedRecipient?.id);
-      if (!currentSelectedExists) {
-        setSelectedRecipient(recipients[0]);
-      }
-    } else {
-      setSelectedRecipient(null);
-    }
   };
   
   const handleLogout = async () => {
@@ -89,7 +75,8 @@ Cordialement`);
           <CardContent className="p-4 sm:p-6 space-y-8">
             <DataTable 
               recipientsColRef={recipientsColRef}
-              onDataLoaded={handleRecipientsLoaded}
+              onDataLoaded={setRecipients}
+              onHeadersLoaded={setHeaders}
               selectedRow={selectedRecipient}
               onRowSelect={handleRowSelect}
             />
@@ -104,8 +91,8 @@ Cordialement`);
                 onBodyChange={setEmailBody}
               />
               <SmtpSettings 
-                recipientCount={allRecipients.length}
-                recipients={allRecipients}
+                recipientCount={recipients.length}
+                recipients={recipients}
                 emailBody={emailBody}
                 emailSubject={emailSubject}
               />
