@@ -36,7 +36,7 @@ import { clearAllRecipients } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
 type DataTableProps = {
-  recipientsColRef: CollectionReference;
+  recipientsColRef: CollectionReference | null;
   onDataChange: (data: MailRecipient[]) => void;
   onHeadersLoaded: (headers: string[]) => void;
   selectedRow: MailRecipient | null;

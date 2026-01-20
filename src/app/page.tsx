@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from 'next/navigation';
 import Header from "@/components/mail-pilot/Header";
 import ExcelImporter from "@/components/mail-pilot/ExcelImporter";
@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import UserGuide from "@/components/mail-pilot/UserGuide";
-import { collection } from "firebase/firestore";
+import { collection, type CollectionReference } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 export type MailRecipient = { [key: string]: string | number };
@@ -56,6 +56,12 @@ Cordialement`);
     }
   };
 
+  const recipientsColRef = useMemo(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, 'users', user.uid, 'recipients');
+  }, [user, firestore]) as CollectionReference | null;
+
+
   if (isUserLoading || !user || !firestore) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -63,8 +69,6 @@ Cordialement`);
       </div>
     );
   }
-
-  const recipientsColRef = collection(firestore, 'users', user.uid, 'recipients');
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">

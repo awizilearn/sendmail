@@ -13,7 +13,7 @@ import { useFirestore } from '@/firebase';
 import { cn } from '@/lib/utils';
 
 type ExcelImporterProps = {
-  recipientsColRef: CollectionReference;
+  recipientsColRef: CollectionReference | null;
 };
 
 export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) {
@@ -41,6 +41,15 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
     if (!file) {
       setFileName('');
       return;
+    }
+    
+    if (!firestore || !recipientsColRef) {
+        toast({
+            variant: 'destructive',
+            title: 'Erreur',
+            description: "La référence à la base de données n'est pas prête. Veuillez réessayer.",
+        });
+        return;
     }
 
     setLoading(true);
