@@ -86,7 +86,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
         
         const rdvDate = addWorkingDays(new Date(), 2);
         
-        const uniqueRows: MailRecipient[] = [];
+        const rowsToImport: MailRecipient[] = [];
         const seenEmails = new Set<string>();
         let duplicateCount = 0;
 
@@ -94,9 +94,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
             const email = rowArray[emailColumnIndex];
             if (email && seenEmails.has(email)) {
                 duplicateCount++;
-                return;
-            }
-            if(email) {
+            } else if (email) {
                 seenEmails.add(email);
             }
 
@@ -116,25 +114,24 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
             }
             recipient['Date du RDV'] = rdvDate.toLocaleDateString('fr-FR');
             
-            const emailValue = String(recipient[emailColumn]).trim();
+            const emailValue = recipient[emailColumn] ? String(recipient[emailColumn]).trim() : '';
             if (emailValue) {
-              recipient.id = emailValue;
-              uniqueRows.push(recipient);
+              rowsToImport.push(recipient);
             }
         });
         
         const batch = writeBatch(firestore);
-        uniqueRows.forEach(recipient => {
-            const docRef = doc(recipientsColRef, String(recipient.id));
-            batch.set(docRef, recipient);
+        rowsToImport.forEach(recipient => {
+            const docRef = doc(recipientsColRef);
+            batch.set(docRef, { ...recipient, id: docRef.id });
         });
         await batch.commit();
 
-        let successMessage = `${uniqueRows.length} enregistrements importés et sauvegardés avec succès.`;
+        let successMessage = `${rowsToImport.length} enregistrements importés et sauvegardés avec succès.`;
         if (duplicateCount > 0) {
             toast({
-              title: 'Doublons trouvés',
-              description: `${duplicateCount} ligne(s) en double basée sur l'adresse e-mail a/ont été ignorée(s).`,
+              title: 'Doublons détectés',
+              description: `${duplicateCount} destinataire(s) en double ont été importé(s).`,
             });
         }
 
