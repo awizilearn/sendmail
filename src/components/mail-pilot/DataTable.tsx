@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CardDescription, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -37,18 +38,19 @@ import { useToast } from '@/hooks/use-toast';
 
 type DataTableProps = {
   recipientsColRef: CollectionReference | null;
-  onDataChange: (data: MailRecipient[]) => void;
+  onSelectionChange: (data: MailRecipient[]) => void;
   onHeadersLoaded: (headers: string[]) => void;
   selectedRow: MailRecipient | null;
   onRowSelect: (row: MailRecipient | null) => void;
 };
 
-export default function DataTable({ recipientsColRef, onDataChange, onHeadersLoaded, selectedRow, onRowSelect }: DataTableProps) {
+export default function DataTable({ recipientsColRef, onSelectionChange, onHeadersLoaded, selectedRow, onRowSelect }: DataTableProps) {
   const memoizedQuery = useMemoFirebase(() => recipientsColRef, [recipientsColRef]);
   const { data: recipients, isLoading, error } = useCollection<MailRecipient>(memoizedQuery);
   const { user } = useUser();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set<string>());
 
   const headers = useMemo(() => {
     if (!recipients || recipients.length === 0) return [];
@@ -57,9 +59,21 @@ export default function DataTable({ recipientsColRef, onDataChange, onHeadersLoa
 
   useEffect(() => {
     if (recipients) {
-      onDataChange(recipients);
+        const allIds = new Set(recipients.map(r => r.id as string).filter(Boolean));
+        setSelectedIds(allIds);
+    } else {
+        setSelectedIds(new Set());
     }
-  }, [recipients, onDataChange]);
+  }, [recipients]);
+
+  useEffect(() => {
+    if (recipients) {
+        const selected = recipients.filter(r => selectedIds.has(r.id as string));
+        onSelectionChange(selected);
+    } else {
+        onSelectionChange([]);
+    }
+  }, [selectedIds, recipients, onSelectionChange]);
   
   useEffect(() => {
     onHeadersLoaded(headers);
@@ -98,6 +112,30 @@ export default function DataTable({ recipientsColRef, onDataChange, onHeadersLoa
     XLSX.writeFile(workbook, "recipients.xlsx");
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+        setSelectedIds(new Set(recipients?.map(r => r.id as string).filter(Boolean)));
+    } else {
+        setSelectedIds(new Set());
+    }
+  };
+
+  const handleRowToggle = (rowId: string) => {
+      setSelectedIds(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(rowId)) {
+              newSet.delete(rowId);
+          } else {
+              newSet.add(rowId);
+          }
+          return newSet;
+      });
+  };
+
+  const isAllSelected = recipients ? selectedIds.size === recipients.length && recipients.length > 0 : false;
+  const isSomeSelected = recipients ? selectedIds.size > 0 && selectedIds.size < recipients.length : false;
+
+
   return (
     <div>
       <div className="flex justify-between items-start">
@@ -107,7 +145,7 @@ export default function DataTable({ recipientsColRef, onDataChange, onHeadersLoa
               2. Vérifier les données
           </CardTitle>
           <CardDescription className="mt-2 pl-12">
-              Sélectionnez un destinataire dans la liste pour prévisualiser son e-mail personnalisé. Total: {recipients?.length ?? 0} destinataires.
+              Sélectionnez les destinataires pour l'envoi, puis cliquez sur une ligne pour prévisualiser l'e-mail. Total: {recipients?.length ?? 0}.
           </CardDescription>
         </div>
         <div className="flex gap-2">
@@ -143,6 +181,13 @@ export default function DataTable({ recipientsColRef, onDataChange, onHeadersLoa
             <Table>
                 <TableHeader className="sticky top-0 bg-card shadow-sm z-10">
                     <TableRow>
+                        <TableHead className="w-12">
+                            <Checkbox
+                                checked={isAllSelected ? true : isSomeSelected ? "indeterminate" : false}
+                                onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
+                                aria-label="Select all"
+                            />
+                        </TableHead>
                         {isLoading && !recipients ? (
                             Array.from({ length: 5 }).map((_, i) => <TableHead key={`skel-head-${i}`}><Skeleton className="h-4 w-24" /></TableHead>)
                         ) : (
@@ -156,22 +201,23 @@ export default function DataTable({ recipientsColRef, onDataChange, onHeadersLoa
                     {isLoading ? (
                         Array.from({ length: 5 }).map((_, i) => (
                             <TableRow key={`skeleton-${i}`}>
+                                <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                                 {headers.length > 0 ? (
                                     headers.map(h => <TableCell key={h}><Skeleton className="h-4 w-full" /></TableCell>)
                                 ) : (
-                                    Array.from({ length: 5 }).map((_, j) => <TableCell key={`skel-cell-${j}`}><Skeleton className="h-4 w-full" /></TableCell>)
+                                    Array.from({ length: 4 }).map((_, j) => <TableCell key={`skel-cell-${j}`}><Skeleton className="h-4 w-full" /></TableCell>)
                                 )}
                             </TableRow>
                         ))
                     ) : error ? (
                         <TableRow>
-                            <TableCell colSpan={headers.length || 1} className="text-center text-destructive">
+                            <TableCell colSpan={headers.length + 1} className="text-center text-destructive">
                                 Erreur: Impossible de charger les données.
                             </TableCell>
                         </TableRow>
                     ) : recipients?.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={headers.length || 1} className="text-center text-muted-foreground h-24">
+                            <TableCell colSpan={headers.length + 1} className="text-center text-muted-foreground h-24">
                                 Aucune donnée. Veuillez importer un fichier pour commencer.
                             </TableCell>
                         </TableRow>
@@ -184,8 +230,15 @@ export default function DataTable({ recipientsColRef, onDataChange, onHeadersLoa
                                     'cursor-pointer',
                                     selectedRow && row.id === selectedRow.id ? 'bg-accent/50 hover:bg-accent' : ''
                                 )}
-                                aria-selected={selectedRow && row.id === selectedRow.id}
+                                data-state={selectedIds.has(row.id as string) ? 'selected' : ''}
                             >
+                                <TableCell onClick={(e) => { e.stopPropagation(); }}>
+                                    <Checkbox
+                                        checked={selectedIds.has(row.id as string)}
+                                        onCheckedChange={() => handleRowToggle(row.id as string)}
+                                        aria-label="Select row"
+                                    />
+                                </TableCell>
                                 {headers.map((header) => (
                                     <TableCell key={header} className="whitespace-nowrap text-sm">
                                         {String(row[header])}

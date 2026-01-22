@@ -81,7 +81,7 @@ Cordialement`);
           <CardContent className="p-6 space-y-8">
             <DataTable 
               recipientsColRef={recipientsColRef}
-              onDataChange={setRecipientsForSmtp}
+              onSelectionChange={setRecipientsForSmtp}
               onHeadersLoaded={setHeaders}
               selectedRow={selectedRecipient}
               onRowSelect={handleRowSelect}
