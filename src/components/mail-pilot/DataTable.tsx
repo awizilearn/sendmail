@@ -90,14 +90,14 @@ export default function DataTable({ recipientsColRef, onSelectionChange, onHeade
     if (result.success) {
       toast({
         title: 'Succès',
-        description: 'Tous les destinataires ont été supprimés.',
+        description: result.message || 'Tous les destinataires ont été supprimés.',
         className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
       });
       onRowSelect(null);
     } else {
       toast({
         variant: 'destructive',
-        title: 'Erreur',
+        title: 'Erreur de suppression',
         description: result.message,
       });
     }

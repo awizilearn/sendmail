@@ -138,17 +138,30 @@ export async function clearAllRecipients(userId: string): Promise<{ success: boo
         if (querySnapshot.empty) {
             return { success: true, message: 'Aucun destinataire à supprimer.' };
         }
+        
+        // Firestore batches are limited to 500 operations.
+        // We'll process the deletion in chunks to avoid hitting this limit.
+        const batchSize = 499;
+        const chunks = [];
+        for (let i = 0; i < querySnapshot.docs.length; i += batchSize) {
+            chunks.push(querySnapshot.docs.slice(i, i + batchSize));
+        }
 
-        const batch = firestore.batch();
-        querySnapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
+        for (const chunk of chunks) {
+            const batch = firestore.batch();
+            chunk.forEach(doc => {
+                // NOTE: This does not delete subcollections (appointments, emailLogs).
+                // Those will be orphaned. A full recursive delete is more complex.
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        }
 
-        await batch.commit();
+        return { success: true, message: `${querySnapshot.size} destinataire(s) ont été supprimés.` };
 
-        return { success: true };
     } catch (error) {
         console.error('Failed to clear recipients:', error);
-        return { success: false, message: 'Échec de la suppression des destinataires dans Firestore.' };
+        const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue.';
+        return { success: false, message: `Échec de la suppression des destinataires: ${errorMessage}` };
     }
 }
