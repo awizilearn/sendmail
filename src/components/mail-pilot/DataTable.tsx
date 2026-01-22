@@ -154,7 +154,7 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
             </Button>
         </div>
       </div>
-        <ScrollArea className="h-72 w-full rounded-md border mt-4">
+        <div className="relative w-full overflow-auto h-72 rounded-md border mt-4">
             <Table>
                 <TableHeader className="sticky top-0 bg-card shadow-sm z-10">
                     <TableRow>
@@ -220,7 +220,7 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
                     )}
                 </TableBody>
             </Table>
-        </ScrollArea>
+        </div>
     </div>
   );
 }
