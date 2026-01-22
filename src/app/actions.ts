@@ -3,7 +3,6 @@
 
 import { generateConfirmationMessage, type ConfirmationMessageInput } from '@/ai/flows/confirmation-message-generation';
 import { initializeServerFirebase } from '@/firebase/server-init';
-import { collection, doc, getDocs, query, setDoc, where, writeBatch } from 'firebase/firestore';
 import nodemailer from 'nodemailer';
 
 export async function getAIGeneratedMessage(input: ConfirmationMessageInput): Promise<{success: boolean; message: string;}> {
@@ -98,10 +97,9 @@ export async function sendConfiguredEmail(
 export async function logSentEmail(userId: string, recipientId: string, appointmentDate: string): Promise<{ success: boolean; message?: string }> {
     const { firestore } = initializeServerFirebase();
     try {
-      const logCollectionRef = collection(firestore, 'users', userId, 'recipients', recipientId, 'emailLogs');
-      const logDocRef = doc(logCollectionRef);
+      const logDocRef = firestore.collection('users').doc(userId).collection('recipients').doc(recipientId).collection('emailLogs').doc();
       
-      await setDoc(logDocRef, {
+      await logDocRef.set({
         id: logDocRef.id,
         appointmentDate,
         sentDateTime: new Date().toISOString(),
@@ -119,13 +117,11 @@ export async function logSentEmail(userId: string, recipientId: string, appointm
 export async function checkEmailSent(userId: string, recipientId: string, appointmentDate: string): Promise<{ sent: boolean; message?: string }> {
     const { firestore } = initializeServerFirebase();
     try {
-      const logsCollection = collection(firestore, 'users', userId, 'recipients', recipientId, 'emailLogs');
-      const q = query(
-        logsCollection,
-        where('appointmentDate', '==', appointmentDate),
-        where('recipientId', '==', recipientId)
-      );
-      const querySnapshot = await getDocs(q);
+      const logsCollection = firestore.collection('users').doc(userId).collection('recipients').doc(recipientId).collection('emailLogs');
+      const q = logsCollection
+        .where('appointmentDate', '==', appointmentDate)
+        .where('recipientId', '==', recipientId);
+      const querySnapshot = await q.get();
       return { sent: !querySnapshot.empty };
     } catch (error) {
       console.error('Failed to check email log:', error);
@@ -136,14 +132,14 @@ export async function checkEmailSent(userId: string, recipientId: string, appoin
 export async function clearAllRecipients(userId: string): Promise<{ success: boolean; message?: string }> {
     const { firestore } = initializeServerFirebase();
     try {
-        const recipientsRef = collection(firestore, 'users', userId, 'recipients');
-        const querySnapshot = await getDocs(recipientsRef);
+        const recipientsRef = firestore.collection('users').doc(userId).collection('recipients');
+        const querySnapshot = await recipientsRef.get();
 
         if (querySnapshot.empty) {
             return { success: true, message: 'Aucun destinataire à supprimer.' };
         }
 
-        const batch = writeBatch(firestore);
+        const batch = firestore.batch();
         querySnapshot.docs.forEach(doc => {
             batch.delete(doc.ref);
         });
