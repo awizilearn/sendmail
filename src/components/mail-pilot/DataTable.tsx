@@ -3,8 +3,6 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { Download, CheckCircle2, Trash2 } from 'lucide-react';
-import { useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { CollectionReference } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 
 import {
@@ -33,24 +31,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { clearAllRecipients } from '@/app/actions';
-import { useToast } from '@/hooks/use-toast';
 
 type DataTableProps = {
-  recipientsColRef: CollectionReference | null;
+  recipients: MailRecipient[];
+  onClear: () => void;
   onSelectionChange: (data: MailRecipient[]) => void;
   onHeadersLoaded: (headers: string[]) => void;
   selectedRow: MailRecipient | null;
   onRowSelect: (row: MailRecipient | null) => void;
 };
 
-export default function DataTable({ recipientsColRef, onSelectionChange, onHeadersLoaded, selectedRow, onRowSelect }: DataTableProps) {
-  const memoizedQuery = useMemoFirebase(() => recipientsColRef, [recipientsColRef]);
-  const { data: recipients, isLoading, error } = useCollection<MailRecipient>(memoizedQuery);
-  const { user } = useUser();
-  const { toast } = useToast();
+export default function DataTable({ recipients, onClear, onSelectionChange, onHeadersLoaded, selectedRow, onRowSelect }: DataTableProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set<string>());
+  const isLoading = !recipients; // Considered loading if recipients array is not yet available.
 
   const headers = useMemo(() => {
     if (!recipients || recipients.length === 0) return [];
@@ -59,7 +53,7 @@ export default function DataTable({ recipientsColRef, onSelectionChange, onHeade
 
   useEffect(() => {
     if (recipients) {
-        const allIds = new Set(recipients.map(r => r.id as string).filter(Boolean));
+        const allIds = new Set(recipients.map(r => r.id).filter(Boolean));
         setSelectedIds(allIds);
     } else {
         setSelectedIds(new Set());
@@ -68,7 +62,7 @@ export default function DataTable({ recipientsColRef, onSelectionChange, onHeade
 
   useEffect(() => {
     if (recipients) {
-        const selected = recipients.filter(r => selectedIds.has(r.id as string));
+        const selected = recipients.filter(r => selectedIds.has(r.id));
         onSelectionChange(selected);
     } else {
         onSelectionChange([]);
@@ -81,26 +75,9 @@ export default function DataTable({ recipientsColRef, onSelectionChange, onHeade
   
 
   const handleClearData = async () => {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié.' });
-      return;
-    }
     setIsDeleting(true);
-    const result = await clearAllRecipients(user.uid);
-    if (result.success) {
-      toast({
-        title: 'Succès',
-        description: result.message || 'Tous les destinataires ont été supprimés.',
-        className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
-      });
-      onRowSelect(null);
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Erreur de suppression',
-        description: result.message,
-      });
-    }
+    onClear();
+    onRowSelect(null);
     setIsDeleting(false);
   };
   
@@ -114,7 +91,7 @@ export default function DataTable({ recipientsColRef, onSelectionChange, onHeade
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-        setSelectedIds(new Set(recipients?.map(r => r.id as string).filter(Boolean)));
+        setSelectedIds(new Set(recipients?.map(r => r.id).filter(Boolean)));
     } else {
         setSelectedIds(new Set());
     }
@@ -160,7 +137,7 @@ export default function DataTable({ recipientsColRef, onSelectionChange, onHeade
                 <AlertDialogHeader>
                   <AlertDialogTitle>Êtes-vous sûr de vouloir continuer ?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Cette action est irréversible. Cela supprimera définitivement tous les destinataires de votre base de données.
+                    Cette action est irréversible. Cela supprimera définitivement la liste des destinataires de la session actuelle.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -209,12 +186,6 @@ export default function DataTable({ recipientsColRef, onSelectionChange, onHeade
                                 )}
                             </TableRow>
                         ))
-                    ) : error ? (
-                        <TableRow>
-                            <TableCell colSpan={headers.length + 1} className="text-center text-destructive">
-                                Erreur: Impossible de charger les données.
-                            </TableCell>
-                        </TableRow>
                     ) : recipients?.length === 0 ? (
                         <TableRow>
                             <TableCell colSpan={headers.length + 1} className="text-center text-muted-foreground h-24">
@@ -230,12 +201,12 @@ export default function DataTable({ recipientsColRef, onSelectionChange, onHeade
                                     'cursor-pointer',
                                     selectedRow && row.id === selectedRow.id ? 'bg-accent/50 hover:bg-accent' : ''
                                 )}
-                                data-state={selectedIds.has(row.id as string) ? 'selected' : ''}
+                                data-state={selectedIds.has(row.id) ? 'selected' : ''}
                             >
                                 <TableCell onClick={(e) => { e.stopPropagation(); }}>
                                     <Checkbox
-                                        checked={selectedIds.has(row.id as string)}
-                                        onCheckedChange={() => handleRowToggle(row.id as string)}
+                                        checked={selectedIds.has(row.id)}
+                                        onCheckedChange={() => handleRowToggle(row.id)}
                                         aria-label="Select row"
                                     />
                                 </TableCell>

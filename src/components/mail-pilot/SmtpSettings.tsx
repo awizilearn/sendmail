@@ -23,10 +23,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { checkEmailSent, logSentEmail, sendConfiguredEmail, sendTestEmail } from '@/app/actions';
+import { sendConfiguredEmail, sendTestEmail } from '@/app/actions';
 import { Checkbox } from '../ui/checkbox';
 import type { MailRecipient } from '@/app/page';
-import { useUser } from '@/firebase';
 import { Progress } from '../ui/progress';
 
 const smtpSchema = z.object({
@@ -43,9 +42,11 @@ type SmtpSettingsProps = {
   recipients: MailRecipient[];
   emailSubject: string;
   emailBody: string;
+  sentEmailKeys: Set<string>;
+  onEmailLogged: (key: string) => void;
 };
 
-export default function SmtpSettings({ recipients, emailSubject, emailBody }: SmtpSettingsProps) {
+export default function SmtpSettings({ recipients, emailSubject, emailBody, sentEmailKeys, onEmailLogged }: SmtpSettingsProps) {
   const [isSending, setIsSending] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [sendingProgress, setSendingProgress] = useState(0);
@@ -55,7 +56,6 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody }: Sm
   const recipientCount = recipients.length;
 
   const { toast } = useToast();
-  const { user } = useUser();
 
   const form = useForm<z.infer<typeof smtpSchema>>({
     resolver: zodResolver(smtpSchema),
@@ -146,10 +146,6 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody }: Sm
   };
 
   const handleSendEmails = async (values: z.infer<typeof smtpSchema>) => {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Utilisateur non authentifié' });
-      return;
-    }
     setIsSending(true);
     setSendingProgress(0);
     setSentCount(0);
@@ -165,12 +161,9 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody }: Sm
             continue;
         }
 
-        const recipientId = String(recipient.id);
-        const appointmentDate = String(recipient['Date du RDV']);
+        const emailKey = `${recipientEmail}_${String(recipient['Date du RDV'])}`;
 
-        const { sent } = await checkEmailSent(user.uid, recipientId, appointmentDate);
-
-        if (sent) {
+        if (sentEmailKeys.has(emailKey)) {
             setSkippedCount(prev => prev + 1);
         } else {
             const personalizedSubject = replacePlaceholders(emailSubject, recipient);
@@ -179,7 +172,7 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody }: Sm
             const result = await sendConfiguredEmail(values, recipientEmail, personalizedSubject, personalizedBody);
             
             if (result.success) {
-                await logSentEmail(user.uid, recipientId, appointmentDate);
+                onEmailLogged(emailKey);
                 setSentCount(prev => prev + 1);
             } else {
                 setFailedCount(prev => prev + 1);
@@ -192,7 +185,7 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody }: Sm
 
     toast({
         title: "Envoi d'e-mails terminé",
-        description: `Envoyés: ${sentCount}, Ignorés: ${skippedCount}, Échoués: ${failedCount}`,
+        description: `Envoyés: ${sentCount}, Ignorés (déjà envoyés): ${skippedCount}, Échoués: ${failedCount}`,
         duration: 5000,
     });
   };
@@ -316,7 +309,7 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody }: Sm
                 <AlertDialogHeader>
                   <AlertDialogTitle>Confirmer l'envoi des e-mails</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Vous êtes sur le point d'envoyer des e-mails aux {recipientCount} destinataires. Le système vérifiera les doublons et n'enverra qu'aux personnes n'ayant pas déjà reçu cet e-mail.
+                    Vous êtes sur le point d'envoyer des e-mails aux {recipientCount} destinataires sélectionnés. Le système ignorera ceux qui ont déjà reçu un e-mail pour ce rendez-vous.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

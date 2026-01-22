@@ -2,7 +2,6 @@
 'use server';
 
 import { generateConfirmationMessage, type ConfirmationMessageInput } from '@/ai/flows/confirmation-message-generation';
-import { initializeServerFirebase } from '@/firebase/server-init';
 import nodemailer from 'nodemailer';
 
 export async function getAIGeneratedMessage(input: ConfirmationMessageInput): Promise<{success: boolean; message: string;}> {
@@ -91,77 +90,5 @@ export async function sendConfiguredEmail(
       console.error(`Failed to send email to ${recipientEmail}:`, error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       return { success: false, message: `Échec de l'envoi à ${recipientEmail}: ${errorMessage}` };
-    }
-}
-
-export async function logSentEmail(userId: string, recipientId: string, appointmentDate: string): Promise<{ success: boolean; message?: string }> {
-    const { firestore } = initializeServerFirebase();
-    try {
-      const logDocRef = firestore.collection('users').doc(userId).collection('recipients').doc(recipientId).collection('emailLogs').doc();
-      
-      await logDocRef.set({
-        id: logDocRef.id,
-        appointmentDate,
-        sentDateTime: new Date().toISOString(),
-        status: 'sent',
-        recipientId: recipientId,
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to log email:', error);
-      return { success: false, message: "Échec de l'enregistrement de l'e-mail dans Firestore." };
-    }
-}
-  
-export async function checkEmailSent(userId: string, recipientId: string, appointmentDate: string): Promise<{ sent: boolean; message?: string }> {
-    const { firestore } = initializeServerFirebase();
-    try {
-      const logsCollection = firestore.collection('users').doc(userId).collection('recipients').doc(recipientId).collection('emailLogs');
-      const q = logsCollection
-        .where('appointmentDate', '==', appointmentDate)
-        .where('recipientId', '==', recipientId);
-      const querySnapshot = await q.get();
-      return { sent: !querySnapshot.empty };
-    } catch (error) {
-      console.error('Failed to check email log:', error);
-      return { sent: false, message: "Échec de la vérification de l'historique des e-mails dans Firestore." };
-    }
-}
-
-export async function clearAllRecipients(userId: string): Promise<{ success: boolean; message?: string }> {
-    const { firestore } = initializeServerFirebase();
-    try {
-        const recipientsRef = firestore.collection('users').doc(userId).collection('recipients');
-        const querySnapshot = await recipientsRef.get();
-
-        if (querySnapshot.empty) {
-            return { success: true, message: 'Aucun destinataire à supprimer.' };
-        }
-        
-        // Firestore batches are limited to 500 operations.
-        // We'll process the deletion in chunks to avoid hitting this limit.
-        const batchSize = 499;
-        const chunks = [];
-        for (let i = 0; i < querySnapshot.docs.length; i += batchSize) {
-            chunks.push(querySnapshot.docs.slice(i, i + batchSize));
-        }
-
-        for (const chunk of chunks) {
-            const batch = firestore.batch();
-            chunk.forEach(doc => {
-                // NOTE: This does not delete subcollections (appointments, emailLogs).
-                // Those will be orphaned. A full recursive delete is more complex.
-                batch.delete(doc.ref);
-            });
-            await batch.commit();
-        }
-
-        return { success: true, message: `${querySnapshot.size} destinataire(s) ont été supprimés.` };
-
-    } catch (error) {
-        console.error('Failed to clear recipients:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue.';
-        return { success: false, message: `Échec de la suppression des destinataires: ${errorMessage}` };
     }
 }

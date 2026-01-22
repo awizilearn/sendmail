@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import Header from "@/components/mail-pilot/Header";
 import ExcelImporter from "@/components/mail-pilot/ExcelImporter";
@@ -9,21 +9,20 @@ import DataTable from "@/components/mail-pilot/DataTable";
 import EmailComposer from "@/components/mail-pilot/EmailComposer";
 import SmtpSettings from "@/components/mail-pilot/SmtpSettings";
 import { Card, CardContent } from "@/components/ui/card";
-import { useUser, useAuth, useFirestore } from "@/firebase";
+import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import UserGuide from "@/components/mail-pilot/UserGuide";
-import { collection, type CollectionReference } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
-export type MailRecipient = { [key: string]: string | number };
+export type MailRecipient = { id: string; [key: string]: string | number; };
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
-  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
+  const [recipients, setRecipients] = useState<MailRecipient[]>([]);
   const [recipientsForSmtp, setRecipientsForSmtp] = useState<MailRecipient[]>([]);
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -37,6 +36,25 @@ Veuillez tenir informé votre {{formateur/formatrice}} en cas d'empêchement.
 
 Cordialement`);
 
+  const [sentEmailKeys, setSentEmailKeys] = useState(new Set<string>());
+
+  const handleDataImported = (data: MailRecipient[]) => {
+    setRecipients(data);
+    setSelectedRecipient(null);
+    setSentEmailKeys(new Set<string>()); // Reset sent history on new import
+  };
+
+  const handleClearRecipients = () => {
+    setRecipients([]);
+    setRecipientsForSmtp([]);
+    setSelectedRecipient(null);
+    setSentEmailKeys(new Set<string>());
+    toast({ title: "Données effacées", description: "La liste des destinataires a été vidée." });
+  };
+  
+  const handleLogEmail = (key: string) => {
+    setSentEmailKeys(prev => new Set(prev).add(key));
+  };
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -56,13 +74,7 @@ Cordialement`);
     }
   };
 
-  const recipientsColRef = useMemo(() => {
-    if (!user || !firestore) return null;
-    return collection(firestore, 'users', user.uid, 'recipients');
-  }, [user, firestore]) as CollectionReference | null;
-
-
-  if (isUserLoading || !user || !firestore) {
+  if (isUserLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <p>Loading...</p>
@@ -75,12 +87,13 @@ Cordialement`);
       <Header onLogout={handleLogout} />
       <main className="flex-1 container mx-auto p-4 md:p-8 space-y-8">
         <UserGuide />
-        <ExcelImporter recipientsColRef={recipientsColRef} />
+        <ExcelImporter onDataImported={handleDataImported} />
         
         <Card>
           <CardContent className="p-6 space-y-8">
             <DataTable 
-              recipientsColRef={recipientsColRef}
+              recipients={recipients}
+              onClear={handleClearRecipients}
               onSelectionChange={setRecipientsForSmtp}
               onHeadersLoaded={setHeaders}
               selectedRow={selectedRecipient}
@@ -100,6 +113,8 @@ Cordialement`);
                 recipients={recipientsForSmtp}
                 emailBody={emailBody}
                 emailSubject={emailSubject}
+                sentEmailKeys={sentEmailKeys}
+                onEmailLogged={handleLogEmail}
               />
             </div>
           </CardContent>

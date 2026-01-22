@@ -8,21 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import type { MailRecipient } from '@/app/page';
-import { CollectionReference, doc, writeBatch } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 import { cn } from '@/lib/utils';
 
 type ExcelImporterProps = {
-  recipientsColRef: CollectionReference | null;
+  onDataImported: (data: MailRecipient[]) => void;
 };
 
-export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) {
+export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const firestore = useFirestore();
 
   const addWorkingDays = (date: Date, days: number): Date => {
     const newDate = new Date(date);
@@ -41,15 +38,6 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
     if (!file) {
       setFileName('');
       return;
-    }
-    
-    if (!firestore || !recipientsColRef) {
-        toast({
-            variant: 'destructive',
-            title: 'Erreur',
-            description: "La référence à la base de données n'est pas prête. Veuillez réessayer.",
-        });
-        return;
     }
 
     setLoading(true);
@@ -87,24 +75,15 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
         const rdvDate = addWorkingDays(new Date(), 2);
         
         const rowsToImport: MailRecipient[] = [];
-        const seenEmails = new Set<string>();
-        let duplicateCount = 0;
 
-        jsonData.slice(1).forEach(rowArray => {
-            const email = rowArray[emailColumnIndex];
-            if (email && seenEmails.has(email)) {
-                duplicateCount++;
-            } else if (email) {
-                seenEmails.add(email);
-            }
-
-            const recipient: MailRecipient = {};
-            (rowArray as (string|number|Date)[]).forEach((cell, index) => {
-                if (headers[index] && headers[index] !== 'Civilité Formateur') {
+        jsonData.slice(1).forEach((rowArray, index) => {
+            const recipient: MailRecipient = { id: `local-recipient-${index}` };
+            (rowArray as (string|number|Date)[]).forEach((cell, cellIndex) => {
+                if (headers[cellIndex] && headers[cellIndex] !== 'Civilité Formateur') {
                     if (cell instanceof Date) {
-                        recipient[headers[index]] = cell.toLocaleDateString('fr-FR');
+                        recipient[headers[cellIndex]] = cell.toLocaleDateString('fr-FR');
                     } else {
-                        recipient[headers[index]] = cell;
+                        recipient[headers[cellIndex]] = cell;
                     }
                 }
             });
@@ -120,24 +99,11 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
             }
         });
         
-        const batch = writeBatch(firestore);
-        rowsToImport.forEach(recipient => {
-            const docRef = doc(recipientsColRef);
-            batch.set(docRef, { ...recipient, id: docRef.id });
-        });
-        await batch.commit();
-
-        let successMessage = `${rowsToImport.length} enregistrements importés et sauvegardés avec succès.`;
-        if (duplicateCount > 0) {
-            toast({
-              title: 'Doublons détectés',
-              description: `${duplicateCount} destinataire(s) en double ont été importé(s).`,
-            });
-        }
-
+        onDataImported(rowsToImport);
+        
         toast({
           title: 'Succès',
-          description: successMessage,
+          description: `${rowsToImport.length} enregistrements importés.`,
           className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
         });
 
@@ -198,12 +164,13 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
     e.preventDefault();
     e.stopPropagation();
     setFileName('');
+    onDataImported([]);
     if (fileInputRef.current) {
         fileInputRef.current.value = '';
     }
     toast({
       title: 'Fichier retiré',
-      description: 'Vous pouvez maintenant télécharger un nouveau fichier.',
+      description: 'La liste des destinataires a été vidée. Vous pouvez télécharger un nouveau fichier.',
     });
   }
 

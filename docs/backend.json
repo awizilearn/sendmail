@@ -1,78 +1,5 @@
 {
   "entities": {
-    "Recipient": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Recipient",
-      "type": "object",
-      "description": "Represents a recipient of an email, extracted from the Excel data.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the recipient."
-        },
-        "emailAddress": {
-          "type": "string",
-          "description": "Email address of the recipient.",
-          "format": "email"
-        },
-        "firstName": {
-          "type": "string",
-          "description": "First name of the recipient."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "Last name of the recipient."
-        },
-        "civility": {
-          "type": "string",
-          "description": "Civility of the recipient (e.g., Monsieur, Madame)."
-        }
-      },
-      "required": [
-        "id",
-        "emailAddress",
-        "firstName",
-        "lastName"
-      ]
-    },
-    "Appointment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Appointment",
-      "type": "object",
-      "description": "Represents an appointment or event associated with a recipient.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the appointment."
-        },
-        "recipientId": {
-          "type": "string",
-          "description": "Reference to Recipient. (Relationship: Recipient 1:N Appointment)"
-        },
-        "appointmentType": {
-          "type": "string",
-          "description": "Type of appointment (e.g., SUIVI DIHS, LIKE FORMATION)."
-        },
-        "appointmentDateTime": {
-          "type": "string",
-          "description": "Date and time of the appointment.",
-          "format": "date-time"
-        },
-        "platform": {
-          "type": "string",
-          "description": "The platform that the training will be on"
-        },
-        "statusMail": {
-          "type": "string",
-          "description": "The status of the email"
-        }
-      },
-      "required": [
-        "id",
-        "recipientId",
-        "appointmentDateTime"
-      ]
-    },
     "Trainer": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Trainer",
@@ -97,42 +24,6 @@
         "firstName",
         "lastName"
       ]
-    },
-    "EmailLog": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "EmailLog",
-      "type": "object",
-      "description": "Represents a log of sent emails.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the email log entry."
-        },
-        "recipientId": {
-          "type": "string",
-          "description": "Reference to Recipient. (Relationship: Recipient 1:N EmailLog)"
-        },
-        "appointmentDate": {
-          "type": "string",
-          "description": "Date of the appointment for which the email was sent."
-        },
-        "sentDateTime": {
-          "type": "string",
-          "description": "Date and time the email was sent.",
-          "format": "date-time"
-        },
-        "status": {
-          "type": "string",
-          "description": "Status of the email sending process (e.g., sent, failed)."
-        }
-      },
-      "required": [
-        "id",
-        "recipientId",
-        "appointmentDate",
-        "sentDateTime",
-        "status"
-      ]
     }
   },
   "auth": {
@@ -144,74 +35,6 @@
   },
   "firestore": {
     "structure": [
-      {
-        "path": "/users/{userId}/recipients/{recipientId}",
-        "definition": {
-          "entityName": "Recipient",
-          "schema": {
-            "$ref": "#/backend/entities/Recipient"
-          },
-          "description": "Stores recipient information. Path-based ownership ensures only the user can access their recipients.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the authenticated user."
-            },
-            {
-              "name": "recipientId",
-              "description": "The unique ID of the recipient."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/recipients/{recipientId}/appointments/{appointmentId}",
-        "definition": {
-          "entityName": "Appointment",
-          "schema": {
-            "$ref": "#/backend/entities/Appointment"
-          },
-          "description": "Stores appointment information for a specific recipient. Path-based ownership ensures only the user can access their recipient's appointments.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the authenticated user."
-            },
-            {
-              "name": "recipientId",
-              "description": "The unique ID of the recipient."
-            },
-            {
-              "name": "appointmentId",
-              "description": "The unique ID of the appointment."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/recipients/{recipientId}/emailLogs/{emailLogId}",
-        "definition": {
-          "entityName": "EmailLog",
-          "schema": {
-            "$ref": "#/backend/entities/EmailLog"
-          },
-          "description": "Stores email log information for a specific recipient. Path-based ownership ensures only the user can access their recipient's email logs.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the authenticated user."
-            },
-            {
-              "name": "recipientId",
-              "description": "The unique ID of the recipient."
-            },
-            {
-              "name": "emailLogId",
-              "description": "The unique ID of the email log."
-            }
-          ]
-        }
-      },
       {
         "path": "/trainers/{trainerId}",
         "definition": {
