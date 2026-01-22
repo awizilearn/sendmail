@@ -17,7 +17,7 @@ export default function EmailPreview({ subject, body, data }: EmailPreviewProps)
     // Custom logic for "formateur/formatrice"
     const civilityFormateur = String(data['Civilité Formateur'] || '').trim().toLowerCase();
     const formateurGender = civilityFormateur === 'mme' || civilityFormateur === 'mme.' ? 'formatrice' : 'formateur';
-    let processedText = text.replace(/\{\{formateur\/formatrice\}\}/g, formateurGender);
+    let processedText = text.replace(/\{\{formateur\/formatrice\}\}/gi, formateurGender);
     
     return processedText.replace(placeholderRegex, (match, key) => {
       const trimmedKey = key.trim();
