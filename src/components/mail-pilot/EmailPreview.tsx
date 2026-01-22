@@ -15,7 +15,8 @@ export default function EmailPreview({ subject, body, data }: EmailPreviewProps)
     if (!data) return text;
     
     // Custom logic for "formateur/formatrice"
-    const formateurGender = String(data['Civilité Formateur']).toLowerCase() === 'mme' ? 'formatrice' : 'formateur';
+    const civilityFormateur = String(data['Civilité Formateur'] || '').trim().toLowerCase();
+    const formateurGender = civilityFormateur === 'mme' || civilityFormateur === 'mme.' ? 'formatrice' : 'formateur';
     let processedText = text.replace(/\{\{formateur\/formatrice\}\}/g, formateurGender);
     
     return processedText.replace(placeholderRegex, (match, key) => {
@@ -23,11 +24,11 @@ export default function EmailPreview({ subject, body, data }: EmailPreviewProps)
       
       // Custom logic for "Civilité"
       if (trimmedKey.toLowerCase() === 'civilité') {
-        const civility = String(data[trimmedKey] || data['Civilité'] || '').toLowerCase();
+        const civility = String(data[trimmedKey] || data['Civilité'] || '').trim().toLowerCase();
         if (civility === 'mr' || civility === 'm.') {
           return 'monsieur';
         }
-        if (civility === 'mme') {
+        if (civility === 'mme' || civility === 'mme.') {
           return 'madame';
         }
         if (civility === 'mlle') {
