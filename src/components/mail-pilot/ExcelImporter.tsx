@@ -230,7 +230,7 @@ export default function ExcelImporter({ recipientsColRef }: ExcelImporterProps) 
             )}
           >
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              {fileName ? <FileCheck2 className="w-8 h-8 mb-4 text-green-500" /> : <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />}
+              {fileName ? <FileCheck2 className="w-8 h-8 text-green-500" /> : <UploadCloud className="w-8 h-8 text-muted-foreground" />}
               {fileName ? (
                 <p className="text-sm text-foreground"><span className="font-semibold">{fileName}</span></p>
               ) : (
