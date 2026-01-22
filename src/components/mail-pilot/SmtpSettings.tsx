@@ -136,7 +136,7 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
   };
 
   const replacePlaceholders = (text: string, data: MailRecipient) => {
-    const formateurGender = data['Civilité Formateur'] === 'Mme' ? 'formatrice' : 'formateur';
+    const formateurGender = String(data['Civilité Formateur']).toLowerCase() === 'mme' ? 'formatrice' : 'formateur';
     let processedText = text.replace(/\{\{formateur\/formatrice\}\}/g, formateurGender);
     
     return processedText.replace(placeholderRegex, (match, key) => {

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from 'react';
@@ -67,10 +66,6 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
         if (emailColumnIndex === -1) {
             throw new Error(`La colonne requise '${emailColumn}' n'a pas été trouvée dans le fichier.`);
         }
-
-        if (!headers.includes('Civilité Formateur')) {
-          headers.push('Civilité Formateur');
-        }
         
         const rdvDate = addWorkingDays(new Date(), 2);
         
@@ -78,19 +73,23 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
 
         jsonData.slice(1).forEach((rowArray, index) => {
             const recipient: MailRecipient = { id: `local-recipient-${index}` };
-            (rowArray as (string|number|Date)[]).forEach((cell, cellIndex) => {
-                if (headers[cellIndex] && headers[cellIndex] !== 'Civilité Formateur') {
+            
+            headers.forEach((header, cellIndex) => {
+                const cell = (rowArray as any[])[cellIndex];
+                if (header) {
                     if (cell instanceof Date) {
-                        recipient[headers[cellIndex]] = cell.toLocaleDateString('fr-FR');
+                        recipient[header] = cell.toLocaleDateString('fr-FR');
                     } else {
-                        recipient[headers[cellIndex]] = cell;
+                        recipient[header] = cell ?? '';
                     }
                 }
             });
 
-            if (rowArray.length < headers.length) {
-                recipient['Civilité Formateur'] = 'M.'; 
+            // If 'Civilité Formateur' column doesn't exist in source, add it with a default.
+            if (!headers.includes('Civilité Formateur')) {
+                recipient['Civilité Formateur'] = 'M.';
             }
+
             recipient['Date du RDV'] = rdvDate.toLocaleDateString('fr-FR');
             
             const emailValue = recipient[emailColumn] ? String(recipient[emailColumn]).trim() : '';
