@@ -17,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CardDescription, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import type { MailRecipient } from '@/app/page';
+import type { MailRecipient } from '@/types/mail-recipient';
 import { Button } from '../ui/button';
 import { Skeleton } from '../ui/skeleton';
 import {

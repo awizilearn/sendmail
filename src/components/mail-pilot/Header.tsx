@@ -1,3 +1,6 @@
+
+'use client';
+
 import { LogOut, User } from 'lucide-react';
 import React from 'react';
 import { Button } from '../ui/button';

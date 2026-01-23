@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from 'react';
@@ -6,7 +7,7 @@ import { UploadCloud, FileCheck2, X, FileUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import type { MailRecipient } from '@/app/page';
+import type { MailRecipient } from '@/types/mail-recipient';
 import { cn } from '@/lib/utils';
 
 type ExcelImporterProps = {
@@ -78,7 +79,15 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
                 const cell = (rowArray as any[])[cellIndex];
                 if (header) {
                     if (cell instanceof Date) {
-                        recipient[header] = cell.toLocaleDateString('fr-FR');
+                        const lowerHeader = header.toLowerCase();
+                        if (lowerHeader.includes('heure') || lowerHeader === 'fin rdv') {
+                            recipient[header] = cell.toLocaleTimeString('fr-FR', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        } else {
+                            recipient[header] = cell.toLocaleDateString('fr-FR');
+                        }
                     } else {
                         recipient[header] = cell ?? '';
                     }
@@ -90,7 +99,10 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
                 recipient['Civilité Formateur'] = 'M.';
             }
 
-            recipient['Date du RDV'] = rdvDate.toLocaleDateString('fr-FR');
+            // Only set default 'Date du RDV' if it wasn't in the imported file
+            if (!recipient['Date du RDV']) {
+              recipient['Date du RDV'] = rdvDate.toLocaleDateString('fr-FR');
+            }
             
             const emailValue = recipient[emailColumn] ? String(recipient[emailColumn]).trim() : '';
             if (emailValue) {

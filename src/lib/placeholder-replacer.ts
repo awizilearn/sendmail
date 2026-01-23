@@ -1,4 +1,5 @@
-import type { MailRecipient } from '@/app/page';
+
+import type { MailRecipient } from '@/types/mail-recipient';
 
 const placeholderRegex = /\{\{([^}]+)\}\}/g;
 
@@ -7,31 +8,40 @@ export function replacePlaceholders(text: string, data: MailRecipient | null): s
     
     return text.replace(placeholderRegex, (match, key) => {
       const trimmedKey = key.trim();
-      const lowerKey = trimmedKey.toLowerCase();
-      
-      // Custom logic for "formateur/formatrice"
-      if (lowerKey === 'formateur/formatrice') {
-        const civilityFormateur = String(data['Civilité Formateur'] || '').trim().toLowerCase();
+
+      // Custom logic for the title "formateur" or "formatrice"
+      // This MUST be a case-sensitive match on the placeholder to distinguish it from the name placeholder.
+      if (trimmedKey.toLowerCase() === 'formateur/formatrice') {
+        // Find the 'Civilité Formateur' key case-insensitively to get the value
+        const civilityKey = Object.keys(data).find(k => k.toLowerCase().trim() === 'civilité formateur');
+        const civilityFormateur = civilityKey ? String(data[civilityKey] || '').trim().toLowerCase() : '';
         return civilityFormateur === 'mme' || civilityFormateur === 'mme.' ? 'formatrice' : 'formateur';
       }
-      
-      // Custom logic for "Civilité"
-      if (lowerKey === 'civilité') {
-        const civility = String(data[trimmedKey] || data['Civilité'] || '').trim().toLowerCase();
-        if (civility === 'mr' || civility === 'm.') {
-          return 'monsieur';
+
+      const lowerTrimmedKey = trimmedKey.toLowerCase();
+      // Find the corresponding key in the data object, case-insensitively
+      const dataKey = Object.keys(data).find(k => k.toLowerCase() === lowerTrimmedKey);
+
+      // If we found a key in the data object...
+      if (dataKey && data[dataKey] !== undefined) {
+        // Special handling for 'Civilité' to expand it
+        if (lowerTrimmedKey === 'civilité') {
+          const civility = String(data[dataKey]).trim().toLowerCase();
+          if (civility === 'mr' || civility === 'm.') {
+            return 'monsieur';
+          }
+          if (civility === 'mme' || civility === 'mme.') {
+            return 'madame';
+          }
+          if (civility === 'mlle') {
+            return 'mademoiselle';
+          }
         }
-        if (civility === 'mme' || civility === 'mme.') {
-          return 'madame';
-        }
-        if (civility === 'mlle') {
-          return 'mademoiselle';
-        }
-        // Fallback for other values
-        return data[trimmedKey] !== undefined ? String(data[trimmedKey]) : match;
+        // For all other keys (like `Formateur/Formatrice` for the name), return the value directly.
+        return String(data[dataKey]);
       }
       
-      // Generic fallback for all other keys
-      return data[trimmedKey] !== undefined ? String(data[trimmedKey]) : match;
+      // If no key found in data, return the original placeholder
+      return match;
     });
 }

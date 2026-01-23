@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { sendConfiguredEmail, sendTestEmail } from '@/app/actions';
 import { Checkbox } from '../ui/checkbox';
-import type { MailRecipient } from '@/app/page';
+import type { MailRecipient } from '@/types/mail-recipient';
 import { Progress } from '../ui/progress';
 import { replacePlaceholders } from '@/lib/placeholder-replacer';
 

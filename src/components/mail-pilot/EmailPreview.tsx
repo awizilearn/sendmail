@@ -1,6 +1,7 @@
+
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import type { MailRecipient } from '@/app/page';
+import type { MailRecipient } from '@/types/mail-recipient';
 import { replacePlaceholders } from '@/lib/placeholder-replacer';
 
 type EmailPreviewProps = {

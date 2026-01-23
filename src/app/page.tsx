@@ -13,8 +13,7 @@ import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import UserGuide from "@/components/mail-pilot/UserGuide";
 import { useToast } from "@/hooks/use-toast";
-
-export type MailRecipient = { id: string; [key: string]: string | number; };
+import type { MailRecipient } from "@/types/mail-recipient";
 
 export default function Home() {
   const { user, isUserLoading } = useUser();

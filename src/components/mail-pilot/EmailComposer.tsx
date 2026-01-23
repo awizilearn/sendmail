@@ -17,7 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { getAIGeneratedMessage } from '@/app/actions';
 import EmailPreview from './EmailPreview';
-import type { MailRecipient } from '@/app/page';
+import type { MailRecipient } from '@/types/mail-recipient';
 
 const formSchema = z.object({
   subject: z.string().min(1, 'Subject is required.'),
