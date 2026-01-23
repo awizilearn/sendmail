@@ -10,17 +10,20 @@ export function replacePlaceholders(text: string, data: MailRecipient | null): s
       const trimmedKey = key.trim();
 
       // Custom logic for the title "formateur" or "formatrice"
-      // This MUST be a case-sensitive match on the placeholder to distinguish it from the name placeholder.
-      if (trimmedKey.toLowerCase() === 'formateur/formatrice') {
-        // Find the 'Civilité Formateur' key case-insensitively to get the value
+      // This MUST be an exact, case-sensitive match on the placeholder to distinguish it from the name placeholder.
+      if (trimmedKey === 'formateur/formatrice') {
         const civilityKey = Object.keys(data).find(k => k.toLowerCase().trim() === 'civilité formateur');
         const civilityFormateur = civilityKey ? String(data[civilityKey] || '').trim().toLowerCase() : '';
-        return civilityFormateur === 'mme' || civilityFormateur === 'mme.' ? 'formatrice' : 'formateur';
+        
+        if (civilityFormateur === 'mme' || civilityFormateur === 'mme.') {
+            return 'formatrice';
+        }
+        return 'formateur';
       }
 
+      // For all other keys, find the corresponding key in the data object, case-insensitively.
       const lowerTrimmedKey = trimmedKey.toLowerCase();
-      // Find the corresponding key in the data object, case-insensitively
-      const dataKey = Object.keys(data).find(k => k.toLowerCase() === lowerTrimmedKey);
+      const dataKey = Object.keys(data).find(k => k.toLowerCase().trim() === lowerTrimmedKey);
 
       // If we found a key in the data object...
       if (dataKey && data[dataKey] !== undefined) {
