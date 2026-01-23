@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import { signOut } from "firebase/auth";
-import { LayoutDashboard, Upload, Mail, Users, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Upload, Mail, Users, Settings, Bell, Calendar } from "lucide-react";
 import { useUser, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import type { MailRecipient } from "@/types/mail-recipient";
@@ -16,7 +16,6 @@ import DataTable from "@/components/mail-pilot/DataTable";
 import EmailComposer from "@/components/mail-pilot/EmailComposer";
 import SmtpSettings from "@/components/mail-pilot/SmtpSettings";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +24,7 @@ const NsConseilLogo = () => (
         <rect x="1.5" y="1.5" width="29" height="29" rx="4" fill="hsl(var(--primary))"/>
         <g transform="translate(0 -2)">
             <path d="M16 4L26 16L16 28L6 16L16 4Z" stroke="hsl(var(--primary-foreground))" strokeWidth="2"/>
-            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="hsl(var(--primary))">TH</text>
+            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="hsl(var(--primary))">TCP</text>
         </g>
     </svg>
 );
@@ -92,14 +91,6 @@ Cordialement`);
     setSelectedRecipient(recipient);
   };
   
-  const handleLogout = async () => {
-    if (auth) {
-      await signOut(auth);
-      toast({ title: "Déconnexion réussie", description: "Vous avez été déconnecté." });
-      router.push('/login');
-    }
-  };
-
   const getInitials = (email?: string | null, name?: string | null) => {
     if (name) return name.charAt(0).toUpperCase();
     if (email) return email.charAt(0).toUpperCase();
@@ -116,9 +107,10 @@ Cordialement`);
   
   const navLinks = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "#", icon: Mail, label: "Email Logs" },
-    { href: "/", icon: Upload, label: "Excel Import" },
-    { href: "#", icon: Users, label: "Beneficiaries" },
+    { href: "#", icon: Calendar, label: "Appointments" },
+    { href: "/", icon: Upload, label: "Excel Imports" },
+    { href: "/settings", icon: Mail, label: "Email Settings" },
+    { href: "#", icon: Bell, label: "Notifications" },
   ];
 
   return (
@@ -128,9 +120,9 @@ Cordialement`);
             <NsConseilLogo />
             <div className="flex flex-col">
               <h1 className="text-lg font-bold text-primary">
-                TrainingHub
+                Training Center Pro
               </h1>
-              <p className="text-xs text-muted-foreground">Automation Center</p>
+              <p className="text-xs text-muted-foreground">Automation Suite</p>
             </div>
         </div>
         <nav className="flex flex-col gap-2">
@@ -142,7 +134,7 @@ Cordialement`);
         </nav>
         <div className="mt-auto">
             <nav className="flex flex-col gap-2 mb-4">
-                <NavLink href="#"><Settings className="h-4 w-4" /> Settings</NavLink>
+                <NavLink href="/settings"><Settings className="h-4 w-4" /> Settings</NavLink>
             </nav>
             {user && (
             <div className="flex items-center gap-3 rounded-lg p-2">
@@ -165,7 +157,7 @@ Cordialement`);
       <main className="flex-1 p-4 md:p-8 space-y-8 overflow-auto">
         <header className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">Excel Import</p>
+            <p className="text-sm text-muted-foreground">Excel Imports</p>
             <h1 className="text-3xl font-bold tracking-tight">Import Appointment Data</h1>
           </div>
         </header>

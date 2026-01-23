@@ -19,19 +19,20 @@ type SmtpConfig = {
   port: number;
   user: string;
   pass: string;
+  secure: boolean;
 };
 
 export async function sendTestEmail(smtpConfig: SmtpConfig): Promise<{ success: boolean; message: string }> {
-  const { host, port, user, pass } = smtpConfig;
+  const { host, port, user, pass, secure } = smtpConfig;
 
   if (!host || !port || !user || !pass) {
-    return { success: false, message: 'La configuration SMTP est incomplète.' };
+    return { success: false, message: 'La configuration SMTP est incomplète. Le mot de passe est requis pour le test.' };
   }
 
   const transporter = nodemailer.createTransport({
     host,
     port,
-    secure: port === 465, // true for 465, false for other ports
+    secure,
     auth: {
       user,
       pass,
@@ -49,7 +50,7 @@ export async function sendTestEmail(smtpConfig: SmtpConfig): Promise<{ success: 
     await transporter.sendMail({
       from: user,
       to: user, // Send to self
-      subject: 'Mail Pilot - Test de Connexion',
+      subject: 'Training Center Pro - Test de Connexion',
       text: 'Votre connexion SMTP est configurée correctement.',
       html: '<b>Votre connexion SMTP est configurée correctement.</b>',
     });
@@ -68,12 +69,12 @@ export async function sendConfiguredEmail(
     subject: string,
     body: string
   ): Promise<{ success: boolean; message: string }> {
-    const { host, port, user, pass } = smtpConfig;
+    const { host, port, user, pass, secure } = smtpConfig;
   
     const transporter = nodemailer.createTransport({
       host,
       port,
-      secure: port === 465,
+      secure,
       auth: { user, pass },
       tls: { rejectUnauthorized: false }
     });

@@ -2,14 +2,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Send, Settings, Loader2, MailCheck, Save, AlertCircle } from 'lucide-react';
+import { Send, Settings, Loader2, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -23,8 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { sendConfiguredEmail, sendTestEmail } from '@/app/actions';
-import { Checkbox } from '../ui/checkbox';
+import { sendConfiguredEmail } from '@/app/actions';
 import type { MailRecipient } from '@/types/mail-recipient';
 import { Progress } from '../ui/progress';
 import { replacePlaceholders } from '@/lib/placeholder-replacer';
@@ -34,8 +30,10 @@ const smtpSchema = z.object({
   port: z.coerce.number().min(1, 'Port is required'),
   user: z.string().min(1, 'Username is required').email('Invalid email address'),
   pass: z.string(),
-  savePassword: z.boolean().default(false),
+  secure: z.boolean().default(true),
 });
+
+type SmtpConfig = z.infer<typeof smtpSchema>;
 
 type SmtpSettingsProps = {
   recipients: MailRecipient[];
@@ -47,94 +45,61 @@ type SmtpSettingsProps = {
 
 export default function SmtpSettings({ recipients, emailSubject, emailBody, sentEmailKeys, onEmailLogged }: SmtpSettingsProps) {
   const [isSending, setIsSending] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
   const [sendingProgress, setSendingProgress] = useState(0);
   const [sentCount, setSentCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
+  const [smtpConfig, setSmtpConfig] = useState<SmtpConfig | null>(null);
   const recipientCount = recipients.length;
 
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof smtpSchema>>({
-    resolver: zodResolver(smtpSchema),
-    defaultValues: {
-      host: '',
-      port: 587,
-      user: '',
-      pass: '',
-      savePassword: false,
-    },
-  });
-
   useEffect(() => {
-    try {
-      const savedSettings = localStorage.getItem('smtpSettings');
-      if (savedSettings) {
-        const { host, port, user, pass, savePassword } = JSON.parse(savedSettings);
-        form.reset({ 
-          host, 
-          port, 
-          user, 
-          pass: savePassword ? pass : '', 
-          savePassword 
-        });
-      }
-    } catch (error) {
-      console.error("Failed to load SMTP settings from localStorage", error);
-    }
-  }, [form]);
-  
-  const handleSaveSettings = (values: z.infer<typeof smtpSchema>) => {
-    try {
-      const settingsToSave = {
-        host: values.host,
-        port: values.port,
-        user: values.user,
-        pass: values.savePassword ? values.pass : '',
-        savePassword: values.savePassword,
-      };
-      localStorage.setItem('smtpSettings', JSON.stringify(settingsToSave));
-      toast({
-        title: 'Paramètres sauvegardés',
-        description: 'Vos paramètres SMTP ont été sauvegardés localement.',
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Échec de la sauvegarde',
-        description: 'Impossible de sauvegarder les paramètres SMTP dans le stockage local.',
-      });
-    }
-  };
+    // Function to load settings, can be recalled
+    const loadSettings = () => {
+        try {
+            const savedSettings = localStorage.getItem('smtpSettings');
+            if (savedSettings) {
+                const parsed = JSON.parse(savedSettings);
+                const result = smtpSchema.safeParse(parsed);
+                if (result.success) {
+                    setSmtpConfig(result.data);
+                } else {
+                    setSmtpConfig(null);
+                }
+            } else {
+                 setSmtpConfig(null);
+            }
+        } catch (error) {
+            console.error("Failed to load SMTP settings from localStorage", error);
+            setSmtpConfig(null);
+        }
+    };
+    
+    loadSettings();
 
-  const handleSendTestEmail = async (values: z.infer<typeof smtpSchema>) => {
-    setIsTesting(true);
-    toast({
-      title: 'Test de la connexion...',
-      description: "Tentative d'envoi d'un e-mail de test.",
-    });
+    // Listen for storage changes from other tabs
+    window.addEventListener('storage', loadSettings);
+    
+    // Also listen for a custom event when settings are saved on the same page
+    window.addEventListener('smtp-settings-updated', loadSettings);
 
-    const result = await sendTestEmail(values);
+    return () => {
+        window.removeEventListener('storage', loadSettings);
+        window.removeEventListener('smtp-settings-updated', loadSettings);
+    };
+  }, []);
 
-    if (result.success) {
-      toast({
-        title: 'Connexion vérifiée',
-        description: result.message,
-        className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600',
-      });
-    } else {
+  const handleSendEmails = async () => {
+    if (!smtpConfig) {
       toast({
         variant: 'destructive',
-        title: 'Échec de la connexion',
-        description: result.message,
+        title: 'Configuration SMTP manquante',
+        description: 'Veuillez configurer vos paramètres SMTP avant d\'envoyer des e-mails.',
       });
+      return;
     }
 
-    setIsTesting(false);
-  };
-
-  const handleSendEmails = async (values: z.infer<typeof smtpSchema>) => {
     setIsSending(true);
     setSendingProgress(0);
     setSentCount(0);
@@ -158,7 +123,7 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
             const personalizedSubject = replacePlaceholders(emailSubject, recipient);
             const personalizedBody = replacePlaceholders(emailBody, recipient).replace(/\n/g, '<br />');
 
-            const result = await sendConfiguredEmail(values, recipientEmail, personalizedSubject, personalizedBody);
+            const result = await sendConfiguredEmail(smtpConfig, recipientEmail, personalizedSubject, personalizedBody);
             
             if (result.success) {
                 onEmailLogged(emailKey);
@@ -182,142 +147,73 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl">Configure & Send</CardTitle>
+        <CardTitle className="text-2xl">Send Emails</CardTitle>
         <CardDescription>
-            Step 4 of 4: Configure your SMTP client to send emails. Credentials can be saved locally.
+            Step 4 of 4: Send the composed email to the selected recipients.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField control={form.control} name="host" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hôte SMTP</FormLabel>
-                    <FormControl><Input placeholder="smtp.example.com" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField control={form.control} name="port" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Port</FormLabel>
-                    <FormControl><Input type="number" placeholder="587" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField control={form.control} name="user" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nom d'utilisateur</FormLabel>
-                    <FormControl><Input type="email" placeholder="your@email.com" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField control={form.control} name="pass" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mot de passe</FormLabel>
-                    <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <CardContent className="space-y-4">
+        {!smtpConfig || !smtpConfig.host || !smtpConfig.user ? (
+            <div className="flex flex-col items-center justify-center text-center p-6 bg-accent/30 rounded-lg">
+                <AlertCircle className="h-8 w-8 text-muted-foreground mb-2"/>
+                <h3 className="font-semibold">Configuration Requise</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                    Vos paramètres d'envoi d'e-mails ne sont pas configurés.
+                </p>
+                <Link href="/settings">
+                    <Button>
+                        <Settings className="mr-2 h-4 w-4"/>
+                        Configurer les paramètres
+                    </Button>
+                </Link>
             </div>
-            <div className="flex items-center space-x-2">
-              <FormField
-                control={form.control}
-                name="savePassword"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md p-1">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="cursor-pointer">
-                        Sauvegarder le mot de passe (stocké localement, non chiffré)
-                      </FormLabel>
+        ) : (
+            <>
+                {isSending && (
+                <div className="space-y-2">
+                    <Progress value={sendingProgress} />
+                    <div className="text-sm text-muted-foreground flex justify-between">
+                        <span>Envoyés: {sentCount}</span>
+                        <span>Ignorés: {skippedCount}</span>
+                        <span>Échoués: {failedCount}</span>
+                        <span>Total: {recipientCount}</span>
                     </div>
-                  </FormItem>
+                </div>
                 )}
-              />
-            </div>
-
-            {isSending && (
-              <div className="space-y-2">
-                  <Progress value={sendingProgress} />
-                  <div className="text-sm text-muted-foreground flex justify-between">
-                      <span>Envoyés: {sentCount}</span>
-                      <span>Ignorés: {skippedCount}</span>
-                      <span>Échoués: {failedCount}</span>
-                      <span>Total: {recipientCount}</span>
-                  </div>
-              </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button 
-                  type="button" 
-                  variant="secondary"
-                  onClick={form.handleSubmit(handleSaveSettings)} 
-                  disabled={isTesting || isSending}
-                  className="w-full sm:w-auto"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Sauvegarder
-              </Button>
-              <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={form.handleSubmit(handleSendTestEmail)} 
-                  disabled={isTesting || isSending}
-                  className="w-full sm:w-auto"
-              >
-                {isTesting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <MailCheck className="mr-2 h-4 w-4" />
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                    <Button className="w-full" disabled={isSending || recipientCount === 0 || !smtpConfig?.pass}>
+                        {isSending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                        <Send className="mr-2 h-4 w-4" />
+                        )}
+                        Envoyer à {recipientCount > 0 ? recipientCount : ''} Destinataires
+                    </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmer l'envoi des e-mails</AlertDialogTitle>
+                        <AlertDialogDescription>
+                        Vous êtes sur le point d'envoyer des e-mails aux {recipientCount} destinataires sélectionnés. Le système ignorera ceux qui ont déjà reçu un e-mail pour ce rendez-vous.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleSendEmails} disabled={isSending}>
+                        {isSending ? 'Envoi en cours...' : 'Procéder'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                {!smtpConfig?.pass && (
+                    <div className="flex items-center text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 mt-2">
+                        <AlertCircle className="h-5 w-5 mr-2" />
+                        <span>Le mot de passe est requis. Veuillez le saisir dans la <Link href="/settings" className="underline font-semibold">page de configuration</Link>.</span>
+                    </div>
                 )}
-                Email de test
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button type="button" className="w-full flex-1" disabled={isSending || isTesting || recipientCount === 0 || !form.formState.isValid || !form.getValues('pass')}>
-                    {isSending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="mr-2 h-4 w-4" />
-                    )}
-                    Envoyer à {recipientCount > 0 ? recipientCount : ''} Destinataires
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmer l'envoi des e-mails</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Vous êtes sur le point d'envoyer des e-mails aux {recipientCount} destinataires sélectionnés. Le système ignorera ceux qui ont déjà reçu un e-mail pour ce rendez-vous.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                    <AlertDialogAction onClick={form.handleSubmit(handleSendEmails)} disabled={isSending}>
-                      {isSending ? 'Envoi en cours...' : 'Procéder'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-            {!form.getValues('pass') && (
-              <div className="flex items-center text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 mt-2">
-                  <AlertCircle className="h-5 w-5 mr-2" />
-                  <span>Le mot de passe est requis pour envoyer des e-mails.</span>
-              </div>
-            )}
-          </form>
-        </Form>
+            </>
+        )}
       </CardContent>
     </Card>
   );
