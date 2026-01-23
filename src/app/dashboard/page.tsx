@@ -1,21 +1,21 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from 'next/navigation';
 import { signOut } from "firebase/auth";
-import { LayoutDashboard, Upload, Mail, Users, Settings, LogOut, Bell, Moon, Search, Calendar, Download, Mail as MailIcon, CheckCircle2, AlertCircle, MailOpen, MoreVertical, Filter, Lightbulb } from "lucide-react";
+import { LayoutDashboard, Upload, Mail, Settings, LogOut, Bell, Moon, Search, Calendar, Download, Mail as MailIcon, CheckCircle2, AlertCircle, MailOpen, MoreVertical, Filter, Lightbulb } from "lucide-react";
 import { useUser, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
 
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import type { DeliveryLog } from "@/types/delivery-log";
 
 const NsConseilLogo = () => (
     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -39,23 +39,11 @@ const NavLink = ({ href, children, active = false }: { href: string; children: R
   </Link>
 );
 
-const deliveryLogs = [
-  { beneficiary: { name: 'Santo SAMMARTINO', email: 'santo.sam@example.com', initials: 'SS' }, trainer: 'Marc Dupont', date: 'Oct 25, 2023, 14:00', status: 'Delivered' },
-  { beneficiary: { name: 'Richard JACQUET', email: 'r.jacquet@domain.net', initials: 'RJ' }, trainer: 'Elena Rossi', date: 'Oct 25, 2023, 09:30', status: 'Failed' },
-  { beneficiary: { name: 'Alice MOREAU', email: 'a.moreau@service.com', initials: 'AM' }, trainer: 'Marc Dupont', date: 'Oct 24, 2023, 16:15', status: 'Opened' },
-  { beneficiary: { name: 'Benoit LEFEBVRE', email: 'blefebvre@outlook.fr', initials: 'BL' }, trainer: 'Sophie Martin', date: 'Oct 24, 2023, 11:00', status: 'Delivered' },
-  { beneficiary: { name: 'Catherine DUVAL', email: 'c.duval@training.org', initials: 'CD' }, trainer: 'Marc Dupont', date: 'Oct 23, 2023, 15:30', status: 'Bounced' },
-];
-
 const getStatusAction = (status: string) => {
     switch (status) {
         case 'Failed':
         case 'Delivered':
             return 'Renvoyer';
-        case 'Opened':
-            return 'Voir l\'historique';
-        case 'Bounced':
-            return 'Mettre à jour l\'e-mail';
         default:
             return '';
     }
@@ -67,27 +55,53 @@ const getStatusBadge = (status: string) => {
             return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-green-800 bg-green-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-green-500"></span>Livré</div>;
         case 'Failed':
             return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-red-800 bg-red-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-red-500"></span>Échoué</div>;
-        case 'Opened':
-            return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-800 bg-blue-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-blue-500"></span>Ouvert</div>;
-        case 'Bounced':
-            return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-yellow-500"></span>Rejeté</div>;
         default:
             return null;
     }
 }
-
 
 export default function DashboardPage() {
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
     const router = useRouter();
     const { toast } = useToast();
+    const [deliveryLogs, setDeliveryLogs] = useState<DeliveryLog[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     useEffect(() => {
         if (!isUserLoading && !user) {
             router.push('/login');
         }
-    }, [user, isUserLoading, router]);
+        try {
+            const savedLogs = localStorage.getItem('deliveryLogs');
+            if (savedLogs) {
+                setDeliveryLogs(JSON.parse(savedLogs));
+            }
+        } catch (error) {
+            console.error("Failed to load delivery logs from localStorage", error);
+            toast({
+                variant: 'destructive',
+                title: 'Erreur de chargement',
+                description: 'Impossible de charger les journaux d\'envoi.',
+            });
+        }
+    }, [user, isUserLoading, router, toast]);
+
+    const stats = useMemo(() => {
+        const total = deliveryLogs.length;
+        const delivered = deliveryLogs.filter(log => log.status === 'Delivered').length;
+        const failed = deliveryLogs.filter(log => log.status === 'Failed').length;
+        const deliveredRate = total > 0 ? (delivered / total) * 100 : 0;
+        return { total, delivered, failed, deliveredRate };
+    }, [deliveryLogs]);
+
+    const paginatedLogs = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return deliveryLogs.slice(startIndex, startIndex + itemsPerPage);
+    }, [deliveryLogs, currentPage]);
+
+    const totalPages = Math.ceil(deliveryLogs.length / itemsPerPage);
 
     const handleLogout = async () => {
         if (auth) {
@@ -192,15 +206,14 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <Card className="bg-white">
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="text-sm font-medium">Total Envoyés</CardTitle>
                                     <MailIcon className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">1,284</div>
-                                    <p className="text-xs text-green-600">+12.5% le mois dernier</p>
+                                    <div className="text-2xl font-bold">{stats.total}</div>
                                 </CardContent>
                             </Card>
                             <Card className="bg-white">
@@ -209,18 +222,8 @@ export default function DashboardPage() {
                                     <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">1,240</div>
-                                    <p className="text-xs text-green-600">Taux de réception +10.2%</p>
-                                </CardContent>
-                            </Card>
-                            <Card className="bg-white">
-                                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">Ouverts</CardTitle>
-                                    <MailOpen className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold">956</div>
-                                    <p className="text-xs text-green-600">Taux d'ouverture 74.3%</p>
+                                    <div className="text-2xl font-bold">{stats.delivered}</div>
+                                    <p className="text-xs text-muted-foreground">{stats.deliveredRate.toFixed(1)}% de réussite</p>
                                 </CardContent>
                             </Card>
                              <Card className="bg-white">
@@ -229,8 +232,7 @@ export default function DashboardPage() {
                                     <AlertCircle className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold text-red-600">44</div>
-                                    <p className="text-xs text-red-600">-2.1% de réduction</p>
+                                    <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
                                 </CardContent>
                             </Card>
                         </div>
@@ -258,8 +260,8 @@ export default function DashboardPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {deliveryLogs.map((log, index) => (
-                                        <TableRow key={index}>
+                                    {paginatedLogs.map((log) => (
+                                        <TableRow key={log.id}>
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <Avatar>
@@ -284,13 +286,11 @@ export default function DashboardPage() {
                                 </TableBody>
                             </Table>
                             <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-                                <span>Affichage de 1 à 5 sur 1 284 résultats</span>
+                                <span>Affichage de {(currentPage - 1) * itemsPerPage + 1} à {Math.min(currentPage * itemsPerPage, deliveryLogs.length)} sur {deliveryLogs.length} résultats</span>
                                 <div className="flex items-center gap-1">
-                                    <Button variant="outline" size="sm">{"<"}</Button>
-                                    <Button variant="default" size="sm">1</Button>
-                                    <Button variant="outline" size="sm">2</Button>
-                                    <Button variant="outline" size="sm">3</Button>
-                                    <Button variant="outline" size="sm">{">"}</Button>
+                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>{"<"}</Button>
+                                    <span className="px-2">Page {currentPage} sur {totalPages > 0 ? totalPages : 1}</span>
+                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>{">"}</Button>
                                 </div>
                             </div>
                         </CardContent>
@@ -304,7 +304,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-semibold">Améliorer la délivrabilité</h3>
-                                    <p className="text-sm text-muted-foreground">44 e-mails en échec détectés. La plupart des échecs se produisent sur les domaines "example.com". Vérifiez vos enregistrements DNS SPF/DKIM dans le Hub d'automatisation.</p>
+                                    <p className="text-sm text-muted-foreground">{stats.failed} e-mails en échec détectés. La plupart des échecs se produisent sur les domaines "example.com". Vérifiez vos enregistrements DNS SPF/DKIM dans le Hub d'automatisation.</p>
                                 </div>
                            </div>
                            <Button variant="outline" className="bg-white">Configurer les règles d'e-mail</Button>

@@ -24,6 +24,7 @@ import { sendConfiguredEmail } from '@/app/actions';
 import type { MailRecipient } from '@/types/mail-recipient';
 import { Progress } from '../ui/progress';
 import { replacePlaceholders } from '@/lib/placeholder-replacer';
+import type { DeliveryLog } from '@/types/delivery-log';
 
 const smtpSchema = z.object({
   host: z.string().min(1, 'Host is required'),
@@ -106,6 +107,10 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
     setSkippedCount(0);
     setFailedCount(0);
 
+    const existingLogsRaw = localStorage.getItem('deliveryLogs');
+    const existingLogs: DeliveryLog[] = existingLogsRaw ? JSON.parse(existingLogsRaw) : [];
+    const newLogs: DeliveryLog[] = [];
+
     for (let i = 0; i < recipients.length; i++) {
         const recipient = recipients[i];
         const recipientEmail = String(recipient['adresse mail']);
@@ -125,6 +130,20 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
 
             const result = await sendConfiguredEmail(smtpConfig, recipientEmail, personalizedSubject, personalizedBody);
             
+            const logEntry: DeliveryLog = {
+                id: `${recipient.id}-${new Date().toISOString()}`,
+                beneficiary: {
+                    name: String(recipient['Bénéficiare'] || ''),
+                    email: recipientEmail,
+                    initials: (String(recipient['Bénéficiare'] || '?')).split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                },
+                trainer: String(recipient['Formateur/Formatrice'] || ''),
+                date: `${recipient['Date du RDV']} de ${recipient['Heure RDV']} à ${recipient['Fin RDV']}`,
+                status: result.success ? 'Delivered' : 'Failed',
+                sentAt: new Date().toISOString(),
+            };
+            newLogs.push(logEntry);
+
             if (result.success) {
                 onEmailLogged(emailKey);
                 setSentCount(prev => prev + 1);
@@ -133,6 +152,14 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
             }
         }
         setSendingProgress(((i + 1) / recipients.length) * 100);
+    }
+
+    if (newLogs.length > 0) {
+        try {
+            localStorage.setItem('deliveryLogs', JSON.stringify([...newLogs, ...existingLogs]));
+        } catch (e) {
+            console.error("Failed to save delivery logs to localStorage", e);
+        }
     }
     
     setIsSending(false);
