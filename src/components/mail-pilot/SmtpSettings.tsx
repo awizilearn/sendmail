@@ -27,6 +27,7 @@ import { sendConfiguredEmail, sendTestEmail } from '@/app/actions';
 import { Checkbox } from '../ui/checkbox';
 import type { MailRecipient } from '@/app/page';
 import { Progress } from '../ui/progress';
+import { replacePlaceholders } from '@/lib/placeholder-replacer';
 
 const smtpSchema = z.object({
   host: z.string().min(1, 'Host is required'),
@@ -35,8 +36,6 @@ const smtpSchema = z.object({
   pass: z.string(),
   savePassword: z.boolean().default(false),
 });
-
-const placeholderRegex = /\{\{([^}]+)\}\}/g;
 
 type SmtpSettingsProps = {
   recipients: MailRecipient[];
@@ -133,34 +132,6 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
     }
 
     setIsTesting(false);
-  };
-
-  const replacePlaceholders = (text: string, data: MailRecipient) => {
-    const civilityFormateur = String(data['Civilité Formateur'] || '').trim().toLowerCase();
-    const formateurGender = civilityFormateur === 'mme' || civilityFormateur === 'mme.' ? 'formatrice' : 'formateur';
-    let processedText = text.replace(/\{\{formateur\/formatrice\}\}/gi, formateurGender);
-    
-    return processedText.replace(placeholderRegex, (match, key) => {
-      const trimmedKey = key.trim();
-      
-      // Custom logic for "Civilité"
-      if (trimmedKey.toLowerCase() === 'civilité') {
-        const civility = String(data[trimmedKey] || data['Civilité'] || '').trim().toLowerCase();
-        if (civility === 'mr' || civility === 'm.') {
-          return 'monsieur';
-        }
-        if (civility === 'mme' || civility === 'mme.') {
-          return 'madame';
-        }
-        if (civility === 'mlle') {
-          return 'mademoiselle';
-        }
-        // Fallback for other values
-        return data[trimmedKey] !== undefined ? String(data[trimmedKey]) : match;
-      }
-
-      return data[trimmedKey] !== undefined ? String(data[trimmedKey]) : match;
-    });
   };
 
   const handleSendEmails = async (values: z.infer<typeof smtpSchema>) => {
