@@ -189,8 +189,8 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl">Upload Data</CardTitle>
-        <CardDescription>Step 1 of 4: Upload your excel file and verify the data mapping.</CardDescription>
+        <CardTitle className="text-2xl">Importer les données</CardTitle>
+        <CardDescription>Étape 1 sur 4 : Téléchargez votre fichier Excel et vérifiez le mappage des données.</CardDescription>
       </CardHeader>
       <CardContent>
         <label 
@@ -217,9 +217,9 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
               </>
             ) : (
               <>
-                <p className="text-lg font-semibold">Upload your Excel file</p>
-                <p className="text-sm text-muted-foreground">Drag and drop your .xlsx or .csv file here or click to browse.</p>
-                <Button variant="default" size="sm" className="mt-4" onClick={() => fileInputRef.current?.click()}>Select File</Button>
+                <p className="text-lg font-semibold">Téléchargez votre fichier Excel</p>
+                <p className="text-sm text-muted-foreground">Glissez-déposez votre fichier .xlsx ou .csv ici ou cliquez pour parcourir.</p>
+                <Button variant="default" size="sm" className="mt-4" onClick={() => fileInputRef.current?.click()}>Sélectionner un fichier</Button>
               </>
             )}
           </div>

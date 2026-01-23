@@ -147,9 +147,9 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl">Send Emails</CardTitle>
+        <CardTitle className="text-2xl">Envoyer les e-mails</CardTitle>
         <CardDescription>
-            Step 4 of 4: Send the composed email to the selected recipients.
+            Étape 4 sur 4 : Envoyez l'e-mail composé aux destinataires sélectionnés.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

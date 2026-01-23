@@ -51,11 +51,11 @@ const getStatusAction = (status: string) => {
     switch (status) {
         case 'Failed':
         case 'Delivered':
-            return 'Resend';
+            return 'Renvoyer';
         case 'Opened':
-            return 'View History';
+            return 'Voir l\'historique';
         case 'Bounced':
-            return 'Update Email';
+            return 'Mettre à jour l\'e-mail';
         default:
             return '';
     }
@@ -64,13 +64,13 @@ const getStatusAction = (status: string) => {
 const getStatusBadge = (status: string) => {
     switch (status) {
         case 'Delivered':
-            return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-green-800 bg-green-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-green-500"></span>Delivered</div>;
+            return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-green-800 bg-green-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-green-500"></span>Livré</div>;
         case 'Failed':
-            return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-red-800 bg-red-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-red-500"></span>Failed</div>;
+            return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-red-800 bg-red-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-red-500"></span>Échoué</div>;
         case 'Opened':
-            return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-800 bg-blue-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-blue-500"></span>Opened</div>;
+            return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-800 bg-blue-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-blue-500"></span>Ouvert</div>;
         case 'Bounced':
-            return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-yellow-500"></span>Bounced</div>;
+            return <div className="inline-flex items-center gap-1.5 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full px-2 py-0.5"><span className="h-2 w-2 rounded-full bg-yellow-500"></span>Rejeté</div>;
         default:
             return null;
     }
@@ -106,16 +106,16 @@ export default function DashboardPage() {
     if (isUserLoading || !user) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
-                <p>Loading...</p>
+                <p>Chargement...</p>
             </div>
         );
     }
     
     const navLinks = [
-        { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-        { href: "#", icon: Calendar, label: "Appointments" },
-        { href: "/", icon: Upload, label: "Excel Imports" },
-        { href: "/settings", icon: Mail, label: "Email Settings" },
+        { href: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
+        { href: "#", icon: Calendar, label: "Rendez-vous" },
+        { href: "/", icon: Upload, label: "Imports Excel" },
+        { href: "/settings", icon: Mail, label: "Paramètres E-mail" },
         { href: "#", icon: Bell, label: "Notifications" },
     ];
 
@@ -140,20 +140,20 @@ export default function DashboardPage() {
                 </nav>
                 <div className="mt-auto">
                     <nav className="flex flex-col gap-2 mb-4">
-                        <NavLink href="/settings"><Settings className="h-4 w-4" /> Settings</NavLink>
+                        <NavLink href="/settings"><Settings className="h-4 w-4" /> Paramètres</NavLink>
                     </nav>
                     {user && (
                         <div className="flex items-center gap-3 rounded-lg p-2">
                             <Avatar className="h-9 w-9">
                                 <AvatarImage src={user.photoURL || "#"} alt="Avatar" />
-                                <AvatarFallback>{getInitials(user.email, user.displayName || "Admin Account")}</AvatarFallback>
+                                <AvatarFallback>{getInitials(user.email, user.displayName || "Compte Admin")}</AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col items-start text-left">
                                 <p className="text-sm font-medium leading-none">
-                                Admin Account
+                                Compte Admin
                                 </p>
                                 <p className="text-xs leading-none text-muted-foreground">
-                                  Pro Plan
+                                  Forfait Pro
                                 </p>
                             </div>
                         </div>
@@ -162,11 +162,11 @@ export default function DashboardPage() {
             </aside>
             <main className="flex-1 p-4 md:p-8 space-y-8 overflow-auto">
                 <header className="flex items-center justify-between">
-                    <h1 className="text-3xl font-bold tracking-tight">Delivery Tracking</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Suivi des envois</h1>
                     <div className="flex items-center gap-4">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search beneficiaries..." className="pl-9 bg-white" />
+                            <Input placeholder="Rechercher des bénéficiaires..." className="pl-9 bg-white" />
                         </div>
                         <Button variant="ghost" size="icon"><Bell className="h-5 w-5"/></Button>
                         <Button variant="ghost" size="icon"><Moon className="h-5 w-5"/></Button>
@@ -177,8 +177,8 @@ export default function DashboardPage() {
                     <div>
                         <div className="flex justify-between items-center mb-4">
                             <div>
-                                <h2 className="text-xl font-semibold">Delivery Performance</h2>
-                                <p className="text-sm text-muted-foreground">Real-time status of automated appointment notifications.</p>
+                                <h2 className="text-xl font-semibold">Performance des envois</h2>
+                                <p className="text-sm text-muted-foreground">Statut en temps réel des notifications de rendez-vous automatisées.</p>
                             </div>
                             <div className="flex items-center gap-4">
                                 <Button variant="outline" className="flex items-center gap-2 bg-white">
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                                 </Button>
                                 <Button>
                                     <Download className="mr-2 h-4 w-4" />
-                                    Export Report
+                                    Exporter le rapport
                                 </Button>
                             </div>
                         </div>
@@ -195,42 +195,42 @@ export default function DashboardPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <Card className="bg-white">
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">Total Sent</CardTitle>
+                                    <CardTitle className="text-sm font-medium">Total Envoyés</CardTitle>
                                     <MailIcon className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">1,284</div>
-                                    <p className="text-xs text-green-600">+12.5% from last month</p>
+                                    <p className="text-xs text-green-600">+12.5% le mois dernier</p>
                                 </CardContent>
                             </Card>
                             <Card className="bg-white">
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">Delivered</CardTitle>
+                                    <CardTitle className="text-sm font-medium">Livrés</CardTitle>
                                     <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">1,240</div>
-                                    <p className="text-xs text-green-600">+10.2% reach rate</p>
+                                    <p className="text-xs text-green-600">Taux de réception +10.2%</p>
                                 </CardContent>
                             </Card>
                             <Card className="bg-white">
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">Opened</CardTitle>
+                                    <CardTitle className="text-sm font-medium">Ouverts</CardTitle>
                                     <MailOpen className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">956</div>
-                                    <p className="text-xs text-green-600">74.3% open rate</p>
+                                    <p className="text-xs text-green-600">Taux d'ouverture 74.3%</p>
                                 </CardContent>
                             </Card>
                              <Card className="bg-white">
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">Failed</CardTitle>
+                                    <CardTitle className="text-sm font-medium">Échoués</CardTitle>
                                     <AlertCircle className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold text-red-600">44</div>
-                                    <p className="text-xs text-red-600">-2.1% reduction</p>
+                                    <p className="text-xs text-red-600">-2.1% de réduction</p>
                                 </CardContent>
                             </Card>
                         </div>
@@ -239,7 +239,7 @@ export default function DashboardPage() {
                     <Card className="bg-white">
                         <CardHeader>
                             <div className="flex justify-between items-center">
-                                <CardTitle>Detailed Delivery Logs</CardTitle>
+                                <CardTitle>Journaux d'envoi détaillés</CardTitle>
                                 <div className="flex items-center gap-2">
                                     <Button variant="ghost" size="icon"><Filter className="h-4 w-4"/></Button>
                                     <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4"/></Button>
@@ -250,10 +250,10 @@ export default function DashboardPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>BENEFICIARY</TableHead>
-                                        <TableHead>TRAINER</TableHead>
-                                        <TableHead>APPOINTMENT DATE</TableHead>
-                                        <TableHead>STATUS</TableHead>
+                                        <TableHead>BÉNÉFICIAIRE</TableHead>
+                                        <TableHead>FORMATEUR</TableHead>
+                                        <TableHead>DATE DU RDV</TableHead>
+                                        <TableHead>STATUT</TableHead>
                                         <TableHead className="text-right">ACTIONS</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -284,7 +284,7 @@ export default function DashboardPage() {
                                 </TableBody>
                             </Table>
                             <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-                                <span>Showing 1 to 5 of 1,284 results</span>
+                                <span>Affichage de 1 à 5 sur 1 284 résultats</span>
                                 <div className="flex items-center gap-1">
                                     <Button variant="outline" size="sm">{"<"}</Button>
                                     <Button variant="default" size="sm">1</Button>
@@ -303,11 +303,11 @@ export default function DashboardPage() {
                                     <Lightbulb className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold">Improve Deliverability</h3>
-                                    <p className="text-sm text-muted-foreground">44 failed emails detected. Most failures occur on "example.com" domains. Check your DNS SPF/DKIM records in the Automation Hub.</p>
+                                    <h3 className="font-semibold">Améliorer la délivrabilité</h3>
+                                    <p className="text-sm text-muted-foreground">44 e-mails en échec détectés. La plupart des échecs se produisent sur les domaines "example.com". Vérifiez vos enregistrements DNS SPF/DKIM dans le Hub d'automatisation.</p>
                                 </div>
                            </div>
-                           <Button variant="outline" className="bg-white">Configure Email Rules</Button>
+                           <Button variant="outline" className="bg-white">Configurer les règles d'e-mail</Button>
                         </CardContent>
                     </Card>
                 </div>

@@ -62,9 +62,9 @@ const MicrosoftIcon = (props: React.ComponentProps<'svg'>) => (
 );
 
 const smtpSchema = z.object({
-  host: z.string().min(1, 'Host is required'),
-  port: z.coerce.number().min(1, 'Port is required'),
-  user: z.string().min(1, 'Username is required').email('Invalid email address'),
+  host: z.string().min(1, "L'hôte est requis"),
+  port: z.coerce.number().min(1, 'Le port est requis'),
+  user: z.string().min(1, "Le nom d'utilisateur est requis").email('Adresse e-mail invalide'),
   pass: z.string(),
   secure: z.boolean().default(true),
   savePassword: z.boolean().default(false), // just for localstorage logic
@@ -162,16 +162,16 @@ export default function SettingsPage() {
     if (isUserLoading || !user) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
-                <p>Loading...</p>
+                <p>Chargement...</p>
             </div>
         );
     }
     
     const navLinks = [
-        { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-        { href: "#", icon: Calendar, label: "Appointments" },
-        { href: "/", icon: Upload, label: "Excel Imports" },
-        { href: "/settings", icon: Mail, label: "Email Settings" },
+        { href: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
+        { href: "#", icon: Calendar, label: "Rendez-vous" },
+        { href: "/", icon: Upload, label: "Imports Excel" },
+        { href: "/settings", icon: Mail, label: "Paramètres E-mail" },
         { href: "#", icon: Bell, label: "Notifications" },
     ];
 
@@ -194,20 +194,20 @@ export default function SettingsPage() {
                 </nav>
                 <div className="mt-auto">
                     <nav className="flex flex-col gap-2 mb-4">
-                        <NavLink href="/settings"><Settings className="h-4 w-4" /> Settings</NavLink>
+                        <NavLink href="/settings"><Settings className="h-4 w-4" /> Paramètres</NavLink>
                     </nav>
                      {user && (
                         <div className="flex items-center gap-3 rounded-lg p-2">
                             <Avatar className="h-9 w-9">
                                 <AvatarImage src={user.photoURL || "#"} alt="Avatar" />
-                                <AvatarFallback>{getInitials(user.email, user.displayName || "Admin Account")}</AvatarFallback>
+                                <AvatarFallback>{getInitials(user.email, user.displayName || "Compte Admin")}</AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col items-start text-left">
                                 <p className="text-sm font-medium leading-none">
-                                Admin Account
+                                Compte Admin
                                 </p>
                                 <p className="text-xs leading-none text-muted-foreground">
-                                  Pro Plan
+                                  Forfait Pro
                                 </p>
                             </div>
                         </div>
@@ -216,8 +216,8 @@ export default function SettingsPage() {
             </aside>
             <main className="flex-1 p-4 md:p-8 space-y-8 overflow-auto">
                 <header>
-                    <h1 className="text-3xl font-bold tracking-tight">Email Connection Settings</h1>
-                    <p className="text-muted-foreground">Configure your email provider to automate appointment notifications from your Excel data.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Paramètres de connexion e-mail</h1>
+                    <p className="text-muted-foreground">Configurez votre fournisseur de messagerie pour automatiser les notifications de rendez-vous à partir de vos données Excel.</p>
                 </header>
 
                 <div className="space-y-8 max-w-4xl">
@@ -225,18 +225,18 @@ export default function SettingsPage() {
                         <CardHeader>
                             <div className="flex items-center gap-3">
                                 <Zap className="h-5 w-5 text-primary" />
-                                <CardTitle>Direct Connect</CardTitle>
+                                <CardTitle>Connexion directe</CardTitle>
                             </div>
-                            <CardDescription>Quickly and securely connect using OAuth 2.0. No password storage required for maximum security.</CardDescription>
+                            <CardDescription>Connectez-vous rapidement et en toute sécurité via OAuth 2.0. Aucun stockage de mot de passe requis pour une sécurité maximale.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex gap-4">
                             <Button variant="outline" className="bg-white">
                                 <MicrosoftIcon className="mr-2"/>
-                                Sign in with Microsoft
+                                Se connecter avec Microsoft
                             </Button>
                             <Button variant="outline" className="bg-white">
                                 <GoogleIcon className="mr-2"/>
-                                Sign in with Google
+                                Se connecter avec Google
                             </Button>
                         </CardContent>
                     </Card>
@@ -245,9 +245,9 @@ export default function SettingsPage() {
                         <CardHeader>
                             <div className="flex items-center gap-3">
                                 <SlidersHorizontal className="h-5 w-5 text-primary" />
-                                <CardTitle>Manual SMTP Configuration</CardTitle>
+                                <CardTitle>Configuration SMTP manuelle</CardTitle>
                             </div>
-                            <CardDescription>For custom or corporate mail servers that do not support OAuth direct connection.</CardDescription>
+                            <CardDescription>Pour les serveurs de messagerie personnalisés ou d'entreprise qui ne prennent pas en charge la connexion directe OAuth.</CardDescription>
                         </CardHeader>
                         <CardContent>
                            <Form {...form}>
@@ -255,7 +255,7 @@ export default function SettingsPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                      <FormField control={form.control} name="host" render={({ field }) => (
                                         <FormItem className="md:col-span-1">
-                                            <FormLabel>SMTP Host</FormLabel>
+                                            <FormLabel>Hôte SMTP</FormLabel>
                                             <FormControl><Input placeholder="smtp.example.com" {...field} /></FormControl>
                                         </FormItem>
                                     )} />
@@ -267,13 +267,13 @@ export default function SettingsPage() {
                                     )} />
                                     <FormField control={form.control} name="user" render={({ field }) => (
                                         <FormItem className="md:col-span-1">
-                                            <FormLabel>Username</FormLabel>
+                                            <FormLabel>Nom d'utilisateur</FormLabel>
                                             <FormControl><Input type="email" placeholder="user@company.com" {...field} /></FormControl>
                                         </FormItem>
                                     )} />
                                     <FormField control={form.control} name="pass" render={({ field }) => (
                                         <FormItem className="md:col-span-1">
-                                            <FormLabel>Password</FormLabel>
+                                            <FormLabel>Mot de passe</FormLabel>
                                             <div className="relative">
                                                 <FormControl><Input type={passwordVisible ? 'text' : 'password'} placeholder="••••••••" {...field} /></FormControl>
                                                 <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground" onClick={() => setPasswordVisible(!passwordVisible)}>
@@ -289,9 +289,9 @@ export default function SettingsPage() {
                                     render={({ field }) => (
                                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                         <div className="space-y-0.5">
-                                            <FormLabel>SSL/TLS Encryption</FormLabel>
+                                            <FormLabel>Chiffrement SSL/TLS</FormLabel>
                                             <FormDescription>
-                                                Secure your connection with SSL/TLS encryption
+                                                Sécurisez votre connexion avec le chiffrement SSL/TLS
                                             </FormDescription>
                                         </div>
                                         <FormControl>
@@ -306,14 +306,14 @@ export default function SettingsPage() {
                                 <div className="flex items-center justify-between mt-4 border-t pt-6">
                                      <div className={cn("flex items-center gap-2 text-sm", isReady ? "text-green-600" : "text-muted-foreground")}>
                                         {isReady && <CheckCircle2 className="h-4 w-4" />}
-                                        <span>{isReady ? "Ready to test connection" : "Veuillez remplir les champs requis"}</span>
+                                        <span>{isReady ? "Prêt à tester la connexion" : "Veuillez remplir les champs requis"}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Button type="button" variant="outline" onClick={form.handleSubmit(handleTestConnection)} disabled={!isReady || isTesting}>
-                                            {isTesting ? "Testing..." : "Test Connection"}
+                                            {isTesting ? "Test en cours..." : "Tester la connexion"}
                                         </Button>
                                         <Button type="submit" disabled={!isReady || isSaving}>
-                                            {isSaving ? "Saving..." : "Save Configuration"}
+                                            {isSaving ? "Enregistrement..." : "Sauvegarder la configuration"}
                                         </Button>
                                     </div>
                                 </div>
@@ -324,9 +324,9 @@ export default function SettingsPage() {
 
                     <Alert>
                         <Info className="h-4 w-4"/>
-                        <AlertTitle>Which one should I choose?</AlertTitle>
+                        <AlertTitle>Lequel choisir ?</AlertTitle>
                         <AlertDescription>
-                        Most users should use Direct Connect for better security and easier setup. Use Manual SMTP only if you are using a custom domain or private mail server.
+                        La plupart des utilisateurs devraient utiliser la connexion directe pour une meilleure sécurité et une configuration plus simple. Utilisez la configuration SMTP manuelle uniquement si vous utilisez un domaine personnalisé ou un serveur de messagerie privé.
                         </AlertDescription>
                     </Alert>
                 </div>

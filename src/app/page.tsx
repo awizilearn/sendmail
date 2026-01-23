@@ -100,16 +100,16 @@ Cordialement`);
   if (isUserLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <p>Loading...</p>
+        <p>Chargement...</p>
       </div>
     );
   }
   
   const navLinks = [
-    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "#", icon: Calendar, label: "Appointments" },
-    { href: "/", icon: Upload, label: "Excel Imports" },
-    { href: "/settings", icon: Mail, label: "Email Settings" },
+    { href: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
+    { href: "#", icon: Calendar, label: "Rendez-vous" },
+    { href: "/", icon: Upload, label: "Imports Excel" },
+    { href: "/settings", icon: Mail, label: "Paramètres E-mail" },
     { href: "#", icon: Bell, label: "Notifications" },
   ];
 
@@ -134,20 +134,20 @@ Cordialement`);
         </nav>
         <div className="mt-auto">
             <nav className="flex flex-col gap-2 mb-4">
-                <NavLink href="/settings"><Settings className="h-4 w-4" /> Settings</NavLink>
+                <NavLink href="/settings"><Settings className="h-4 w-4" /> Paramètres</NavLink>
             </nav>
             {user && (
             <div className="flex items-center gap-3 rounded-lg p-2">
                 <Avatar className="h-9 w-9">
                     <AvatarImage src={user.photoURL || "#"} alt="Avatar" />
-                    <AvatarFallback>{getInitials(user.email, user.displayName || "Admin Account")}</AvatarFallback>
+                    <AvatarFallback>{getInitials(user.email, user.displayName || "Compte Admin")}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start text-left">
                     <p className="text-sm font-medium leading-none">
-                    Admin Account
+                    Compte Admin
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      Pro Plan
+                      Forfait Pro
                     </p>
                 </div>
             </div>
@@ -157,8 +157,8 @@ Cordialement`);
       <main className="flex-1 p-4 md:p-8 space-y-8 overflow-auto">
         <header className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">Excel Imports</p>
-            <h1 className="text-3xl font-bold tracking-tight">Import Appointment Data</h1>
+            <p className="text-sm text-muted-foreground">Imports Excel</p>
+            <h1 className="text-3xl font-bold tracking-tight">Importer les données de rendez-vous</h1>
           </div>
         </header>
 

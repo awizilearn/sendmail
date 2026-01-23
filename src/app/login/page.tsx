@@ -47,7 +47,7 @@ export default function LoginPage() {
   if (isUserLoading) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-background">
-            <p>Loading...</p>
+            <p>Chargement...</p>
         </div>
     );
   }

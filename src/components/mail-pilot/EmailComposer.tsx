@@ -20,8 +20,8 @@ import EmailPreview from './EmailPreview';
 import type { MailRecipient } from '@/types/mail-recipient';
 
 const formSchema = z.object({
-  subject: z.string().min(1, 'Subject is required.'),
-  body: z.string().min(1, 'Email body is required.'),
+  subject: z.string().min(1, 'Le sujet est requis.'),
+  body: z.string().min(1, "Le corps de l'e-mail est requis."),
 });
 
 type EmailComposerProps = {
@@ -125,9 +125,9 @@ export default function EmailComposer({
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-2xl">Compose & Preview</CardTitle>
+        <CardTitle className="text-2xl">Composer & Prévisualiser</CardTitle>
         <CardDescription>
-            Step 3 of 4: Create your email template. Use variables to personalize for each recipient.
+            Étape 3 sur 4 : Créez votre modèle d'e-mail. Utilisez des variables pour personnaliser chaque destinataire.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -141,7 +141,7 @@ export default function EmailComposer({
                   <FormItem>
                     <FormLabel>Sujet</FormLabel>
                     <FormControl>
-                      <Input placeholder="Email subject" {...field} />
+                      <Input placeholder="Sujet de l'e-mail" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -154,7 +154,7 @@ export default function EmailComposer({
                   <FormItem>
                     <FormLabel>Corps de l'e-mail</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Email body..." className="min-h-[200px] text-sm leading-relaxed" {...field} />
+                      <Textarea placeholder="Corps de l'e-mail..." className="min-h-[200px] text-sm leading-relaxed" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

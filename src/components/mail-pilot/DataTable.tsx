@@ -117,9 +117,9 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
       <CardHeader>
         <div className="flex justify-between items-start">
             <div>
-                <CardTitle className="text-2xl">Data Preview</CardTitle>
+                <CardTitle className="text-2xl">Aperçu des données</CardTitle>
                 <CardDescription>
-                    Step 2 of 4: Select recipients for sending, then click a row to preview the email. Total: {recipients?.length ?? 0}.
+                    Étape 2 sur 4 : Sélectionnez les destinataires pour l'envoi, puis cliquez sur une ligne pour prévisualiser l'e-mail. Total : {recipients?.length ?? 0}.
                 </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -161,7 +161,7 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
                             <Checkbox
                                 checked={isAllSelected ? true : isSomeSelected ? "indeterminate" : false}
                                 onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
-                                aria-label="Select all"
+                                aria-label="Tout sélectionner"
                             />
                         </TableHead>
                         {isLoading && !recipients ? (
@@ -206,7 +206,7 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
                                     <Checkbox
                                         checked={selectedIds.has(row.id)}
                                         onCheckedChange={() => handleRowToggle(row.id)}
-                                        aria-label="Select row"
+                                        aria-label="Sélectionner la ligne"
                                     />
                                 </TableCell>
                                 {headers.map((header) => (
