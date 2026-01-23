@@ -3,17 +3,42 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
-import Header from "@/components/mail-pilot/Header";
+import { signOut } from "firebase/auth";
+import { LayoutDashboard, Upload, Mails, History, LogOut } from "lucide-react";
+import { useUser, useAuth } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+import type { MailRecipient } from "@/types/mail-recipient";
+
 import ExcelImporter from "@/components/mail-pilot/ExcelImporter";
 import DataTable from "@/components/mail-pilot/DataTable";
 import EmailComposer from "@/components/mail-pilot/EmailComposer";
 import SmtpSettings from "@/components/mail-pilot/SmtpSettings";
-import { Card, CardContent } from "@/components/ui/card";
-import { useUser, useAuth } from "@/firebase";
-import { signOut } from "firebase/auth";
-import UserGuide from "@/components/mail-pilot/UserGuide";
-import { useToast } from "@/hooks/use-toast";
-import type { MailRecipient } from "@/types/mail-recipient";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+
+const NsConseilLogo = () => (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1.5" y="1.5" width="29" height="29" rx="4" fill="hsl(var(--primary))"/>
+        <g transform="translate(0 -2)">
+            <path d="M16 4L26 16L16 28L6 16L16 4Z" stroke="hsl(var(--primary-foreground))" strokeWidth="2"/>
+            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="hsl(var(--primary))">NS</text>
+        </g>
+    </svg>
+);
+
+const NavLink = ({ href, children, active = false }: { href: string; children: React.ReactNode; active?: boolean }) => (
+  <a
+    href={href}
+    className={cn(
+      "flex items-center gap-3 rounded-lg px-3 py-2 text-foreground transition-all hover:bg-accent hover:text-accent-foreground",
+      active && "bg-accent text-accent-foreground font-semibold"
+    )}
+  >
+    {children}
+  </a>
+);
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -73,6 +98,12 @@ Cordialement`);
     }
   };
 
+  const getInitials = (email?: string | null, name?: string | null) => {
+    if (name) return name.charAt(0).toUpperCase();
+    if (email) return email.charAt(0).toUpperCase();
+    return '?';
+  };
+
   if (isUserLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -82,42 +113,100 @@ Cordialement`);
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header onLogout={handleLogout} />
-      <main className="flex-1 container mx-auto p-4 md:p-8 space-y-8">
-        <UserGuide />
-        <ExcelImporter onDataImported={handleDataImported} />
-        
-        <Card>
-          <CardContent className="p-6 space-y-8">
-            <DataTable 
-              recipients={recipients}
-              onClear={handleClearRecipients}
-              onSelectionChange={setRecipientsForSmtp}
-              onHeadersLoaded={setHeaders}
-              selectedRow={selectedRecipient}
-              onRowSelect={handleRowSelect}
-            />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-              <EmailComposer 
-                key={selectedRecipient ? JSON.stringify(selectedRecipient) : 'empty'}
-                selectedRecipient={selectedRecipient}
-                headers={headers}
-                subject={emailSubject}
-                onSubjectChange={setEmailSubject}
-                body={emailBody}
-                onBodyChange={setEmailBody}
+    <div className="flex min-h-screen w-full bg-background text-foreground">
+      <aside className="hidden w-64 flex-col border-r bg-white p-4 sm:flex">
+        <div className="flex items-center gap-3 mb-8">
+            <NsConseilLogo />
+            <h1 className="text-xl font-bold text-primary">
+              NS CONSEIL
+            </h1>
+        </div>
+        <nav className="flex flex-col gap-2">
+          <NavLink href="#"><LayoutDashboard className="h-4 w-4" /> Dashboard</NavLink>
+          <NavLink href="#" active><Upload className="h-4 w-4" /> Import Data</NavLink>
+          <NavLink href="#"><Mails className="h-4 w-4" /> Email Templates</NavLink>
+          <NavLink href="#"><History className="h-4 w-4" /> Notification History</NavLink>
+        </nav>
+        <div className="mt-auto">
+            {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start gap-3 px-3 h-auto py-2">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={user.photoURL || "#"} alt="Avatar" />
+                    <AvatarFallback>{getInitials(user.email, user.displayName)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col items-start text-left">
+                     <p className="text-sm font-medium leading-none">
+                      {user.displayName || (user.isAnonymous ? 'Utilisateur Anonyme' : 'Utilisateur')}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email || 'Non connecté'}
+                    </p>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user.displayName || (user.isAnonymous ? 'Utilisateur Anonyme' : 'Utilisateur')}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email || 'Non connecté'}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Se déconnecter</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+           )}
+        </div>
+      </aside>
+      <main className="flex-1 p-4 md:p-8 space-y-8 overflow-auto">
+        <header className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Dashboard / Import Data</p>
+            <h1 className="text-3xl font-bold tracking-tight">Import Appointment Data</h1>
+          </div>
+        </header>
+
+        <div className="space-y-8">
+          <ExcelImporter onDataImported={handleDataImported} />
+          
+          <div className="space-y-8">
+              <DataTable 
+                recipients={recipients}
+                onClear={handleClearRecipients}
+                onSelectionChange={setRecipientsForSmtp}
+                onHeadersLoaded={setHeaders}
+                selectedRow={selectedRecipient}
+                onRowSelect={handleRowSelect}
               />
-              <SmtpSettings 
-                recipients={recipientsForSmtp}
-                emailBody={emailBody}
-                emailSubject={emailSubject}
-                sentEmailKeys={sentEmailKeys}
-                onEmailLogged={handleLogEmail}
-              />
-            </div>
-          </CardContent>
-        </Card>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <EmailComposer 
+                  key={selectedRecipient ? JSON.stringify(selectedRecipient) : 'empty'}
+                  selectedRecipient={selectedRecipient}
+                  headers={headers}
+                  subject={emailSubject}
+                  onSubjectChange={setEmailSubject}
+                  body={emailBody}
+                  onBodyChange={setEmailBody}
+                />
+                <SmtpSettings 
+                  recipients={recipientsForSmtp}
+                  emailBody={emailBody}
+                  emailSubject={emailSubject}
+                  sentEmailKeys={sentEmailKeys}
+                  onEmailLogged={handleLogEmail}
+                />
+              </div>
+          </div>
+        </div>
       </main>
     </div>
   );

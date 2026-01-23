@@ -3,12 +3,13 @@
 
 import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { UploadCloud, FileCheck2, X, FileUp } from 'lucide-react';
+import { UploadCloud, FileCheck2, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import type { MailRecipient } from '@/types/mail-recipient';
 import { cn } from '@/lib/utils';
+import { Button } from '../ui/button';
 
 type ExcelImporterProps = {
   onDataImported: (data: MailRecipient[]) => void;
@@ -188,43 +189,42 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-          <div className="bg-primary/10 text-primary p-2.5 rounded-lg flex items-center justify-center"><FileUp className="w-6 h-6"/></div>
-          1. Importer les données
-        </CardTitle>
-        <CardDescription className="pl-12">Téléchargez la liste des destinataires au format .xlsx, .xls ou .csv. Assurez-vous d'inclure une colonne 'Civilité Formateur' ('M.' ou 'Mme') pour un affichage correct.</CardDescription>
+        <CardTitle className="text-2xl">Upload Data</CardTitle>
+        <CardDescription>Step 1 of 4: Upload your excel file and verify the data mapping.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-center w-full">
-          <label 
-            htmlFor="dropzone-file" 
-            onDrop={handleDrop} 
-            onDragOver={e => e.preventDefault()} 
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-            className={cn(
-              "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-accent/50 border-border relative transition-colors",
-              isDragOver && "bg-accent/80 border-primary"
-            )}
-          >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              {fileName ? <FileCheck2 className="w-8 h-8 text-green-500" /> : <UploadCloud className="w-8 h-8 text-muted-foreground" />}
-              {fileName ? (
-                <p className="text-sm text-foreground"><span className="font-semibold">{fileName}</span></p>
-              ) : (
-                <>
-                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Cliquez pour télécharger</span> ou glisser-déposer</p>
-                  <p className="text-xs text-muted-foreground">XLSX, XLS or CSV</p>
-                </>
-              )}
-              {loading && <p className="text-xs text-primary mt-2">Traitement en cours...</p>}
+        <label 
+          htmlFor="dropzone-file" 
+          onDrop={handleDrop} 
+          onDragOver={e => e.preventDefault()} 
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          className={cn(
+            "flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-accent/50 border-border relative transition-colors",
+            isDragOver && "bg-accent/80 border-primary"
+          )}
+        >
+          <div className="flex flex-col items-center justify-center text-center p-6">
+            <div className="p-4 bg-primary/10 rounded-full mb-4">
+              <UploadCloud className="w-8 h-8 text-primary" />
             </div>
-            <Input id="dropzone-file" type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx, .xls, .csv" disabled={loading} />
-            {fileName && !loading && (
-              <button onClick={handleReset} className="absolute top-2 right-2 p-1 rounded-full bg-muted/50 hover:bg-muted"><X className="w-4 h-4" /></button>
+            {fileName ? (
+              <>
+                <FileCheck2 className="w-8 h-8 text-green-500 mb-2" />
+                <p className="text-lg font-semibold text-foreground">{fileName}</p>
+                <p className="text-sm text-muted-foreground">{loading ? "Traitement en cours..." : "Fichier chargé avec succès."}</p>
+                 <button onClick={handleReset} className="absolute top-4 right-4 p-1 rounded-full bg-muted/50 hover:bg-muted text-foreground/50 hover:text-foreground"><X className="w-5 h-5" /></button>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-semibold">Upload your Excel file</p>
+                <p className="text-sm text-muted-foreground">Drag and drop your .xlsx or .csv file here or click to browse.</p>
+                <Button variant="default" size="sm" className="mt-4" onClick={() => fileInputRef.current?.click()}>Select File</Button>
+              </>
             )}
-          </label>
-        </div>
+          </div>
+          <Input id="dropzone-file" type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx, .xls, .csv" disabled={loading} />
+        </label>
       </CardContent>
     </Card>
   );

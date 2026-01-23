@@ -14,8 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { CardDescription, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { MailRecipient } from '@/types/mail-recipient';
 import { Button } from '../ui/button';
@@ -114,49 +113,49 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
 
 
   return (
-    <div>
-      <div className="flex justify-between items-start">
-        <div>
-          <CardTitle className="flex items-center gap-3">
-              <div className="bg-primary/10 text-primary p-2.5 rounded-lg flex items-center justify-center"><CheckCircle2 className="w-6 h-6"/></div>
-              2. Vérifier les données
-          </CardTitle>
-          <CardDescription className="mt-2 pl-12">
-              Sélectionnez les destinataires pour l'envoi, puis cliquez sur une ligne pour prévisualiser l'e-mail. Total: {recipients?.length ?? 0}.
-          </CardDescription>
-        </div>
-        <div className="flex gap-2">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={!recipients || recipients.length === 0 || isDeleting}>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Vider
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle className="text-2xl">Data Preview</CardTitle>
+                <CardDescription>
+                    Step 2 of 4: Select recipients for sending, then click a row to preview the email. Total: {recipients?.length ?? 0}.
+                </CardDescription>
+            </div>
+            <div className="flex gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" disabled={!recipients || recipients.length === 0 || isDeleting}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Vider
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Êtes-vous sûr de vouloir continuer ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Cette action est irréversible. Cela supprimera définitivement la liste des destinataires de la session actuelle.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleClearData} disabled={isDeleting}>
+                        {isDeleting ? 'Suppression...' : 'Supprimer les données'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={!recipients || recipients.length === 0}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Exporter
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Êtes-vous sûr de vouloir continuer ?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Cette action est irréversible. Cela supprimera définitivement la liste des destinataires de la session actuelle.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleClearData} disabled={isDeleting}>
-                    {isDeleting ? 'Suppression...' : 'Supprimer les données'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={!recipients || recipients.length === 0}>
-                <Download className="mr-2 h-4 w-4" />
-                Exporter
-            </Button>
+            </div>
         </div>
-      </div>
-        <div className="relative w-full overflow-auto h-72 rounded-md border mt-4">
+      </CardHeader>
+      <CardContent>
+        <div className="w-full overflow-auto rounded-md border">
             <Table>
-                <TableHeader className="sticky top-0 bg-card shadow-sm z-10">
+                <TableHeader className="sticky top-0 bg-card z-10">
                     <TableRow>
                         <TableHead className="w-12">
                             <Checkbox
@@ -199,7 +198,7 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
                                 onClick={() => onRowSelect(row)}
                                 className={cn(
                                     'cursor-pointer',
-                                    selectedRow && row.id === selectedRow.id ? 'bg-accent/50 hover:bg-accent' : ''
+                                    selectedRow && row.id === selectedRow.id ? 'bg-accent hover:bg-accent/80' : ''
                                 )}
                                 data-state={selectedIds.has(row.id) ? 'selected' : ''}
                             >
@@ -221,6 +220,7 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
                 </TableBody>
             </Table>
         </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -14,10 +14,10 @@ type HeaderProps = {
 
 const NsConseilLogo = () => (
     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1.5" y="1.5" width="29" height="29" rx="4" fill="#1E2A47"/>
+        <rect x="1.5" y="1.5" width="29" height="29" rx="4" fill="hsl(var(--primary))"/>
         <g transform="translate(0 -2)">
-            <path d="M16 4L26 16L16 28L6 16L16 4Z" stroke="#E6A23C" strokeWidth="2"/>
-            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="#E5E7EB">NS</text>
+            <path d="M16 4L26 16L16 28L6 16L16 4Z" stroke="hsl(var(--primary-foreground))" strokeWidth="2"/>
+            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="hsl(var(--primary))">NS</text>
         </g>
     </svg>
 )
@@ -38,7 +38,7 @@ export default function Header({ onLogout }: HeaderProps) {
             <div className="mr-3">
               <NsConseilLogo />
             </div>
-            <h1 className="text-2xl font-bold" style={{color: 'hsl(var(--primary))'}}>
+            <h1 className="text-2xl font-bold text-primary">
               NS CONSEIL
             </h1>
         </div>

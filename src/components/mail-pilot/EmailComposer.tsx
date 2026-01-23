@@ -123,14 +123,11 @@ export default function EmailComposer({
   };
 
   return (
-    <Card className="h-full shadow-lg">
+    <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-            <div className="bg-primary/10 text-primary p-2.5 rounded-lg flex items-center justify-center"><PencilRuler className="w-6 h-6"/></div>
-            3. Composer & Prévisualiser
-        </CardTitle>
-        <CardDescription className="pl-12">
-            Créez votre modèle d'e-mail. Utilisez des variables pour personnaliser chaque destinataire.
+        <CardTitle className="text-2xl">Compose & Preview</CardTitle>
+        <CardDescription>
+            Step 3 of 4: Create your email template. Use variables to personalize for each recipient.
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -10,7 +10,7 @@ import { Send, Settings, Loader2, MailCheck, Save, AlertCircle } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { CardDescription, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -180,144 +180,145 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
   };
 
   return (
-    <div>
-      <CardTitle className="flex items-center gap-3">
-          <div className="bg-primary/10 text-primary p-2.5 rounded-lg flex items-center justify-center"><Send className="w-6 h-6"/></div>
-          4. Configurer & Envoyer
-      </CardTitle>
-      <CardDescription className="mt-2 pl-12">
-        Configurez votre client SMTP pour envoyer les emails. Les identifiants peuvent être sauvegardés localement.
-      </CardDescription>
-      <Form {...form}>
-        <form className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField control={form.control} name="host" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Hôte SMTP</FormLabel>
-                  <FormControl><Input placeholder="smtp.example.com" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField control={form.control} name="port" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Port</FormLabel>
-                  <FormControl><Input type="number" placeholder="587" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField control={form.control} name="user" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nom d'utilisateur</FormLabel>
-                  <FormControl><Input type="email" placeholder="your@email.com" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField control={form.control} name="pass" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Mot de passe</FormLabel>
-                  <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <FormField
-              control={form.control}
-              name="savePassword"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md p-1">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel className="cursor-pointer">
-                      Sauvegarder le mot de passe (stocké localement, non chiffré)
-                    </FormLabel>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-2xl">Configure & Send</CardTitle>
+        <CardDescription>
+            Step 4 of 4: Configure your SMTP client to send emails. Credentials can be saved locally.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField control={form.control} name="host" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hôte SMTP</FormLabel>
+                    <FormControl><Input placeholder="smtp.example.com" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField control={form.control} name="port" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Port</FormLabel>
+                    <FormControl><Input type="number" placeholder="587" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField control={form.control} name="user" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nom d'utilisateur</FormLabel>
+                    <FormControl><Input type="email" placeholder="your@email.com" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField control={form.control} name="pass" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mot de passe</FormLabel>
+                    <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <FormField
+                control={form.control}
+                name="savePassword"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md p-1">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="cursor-pointer">
+                        Sauvegarder le mot de passe (stocké localement, non chiffré)
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {isSending && (
+              <div className="space-y-2">
+                  <Progress value={sendingProgress} />
+                  <div className="text-sm text-muted-foreground flex justify-between">
+                      <span>Envoyés: {sentCount}</span>
+                      <span>Ignorés: {skippedCount}</span>
+                      <span>Échoués: {failedCount}</span>
+                      <span>Total: {recipientCount}</span>
                   </div>
-                </FormItem>
-              )}
-            />
-          </div>
+              </div>
+            )}
 
-          {isSending && (
-            <div className="space-y-2">
-                <Progress value={sendingProgress} />
-                <div className="text-sm text-muted-foreground flex justify-between">
-                    <span>Envoyés: {sentCount}</span>
-                    <span>Ignorés: {skippedCount}</span>
-                    <span>Échoués: {failedCount}</span>
-                    <span>Total: {recipientCount}</span>
-                </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                  type="button" 
+                  variant="secondary"
+                  onClick={form.handleSubmit(handleSaveSettings)} 
+                  disabled={isTesting || isSending}
+                  className="w-full sm:w-auto"
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Sauvegarder
+              </Button>
+              <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={form.handleSubmit(handleSendTestEmail)} 
+                  disabled={isTesting || isSending}
+                  className="w-full sm:w-auto"
+              >
+                {isTesting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <MailCheck className="mr-2 h-4 w-4" />
+                )}
+                Email de test
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" className="w-full flex-1" disabled={isSending || isTesting || recipientCount === 0 || !form.formState.isValid || !form.getValues('pass')}>
+                    {isSending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="mr-2 h-4 w-4" />
+                    )}
+                    Envoyer à {recipientCount > 0 ? recipientCount : ''} Destinataires
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmer l'envoi des e-mails</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Vous êtes sur le point d'envoyer des e-mails aux {recipientCount} destinataires sélectionnés. Le système ignorera ceux qui ont déjà reçu un e-mail pour ce rendez-vous.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={form.handleSubmit(handleSendEmails)} disabled={isSending}>
+                      {isSending ? 'Envoi en cours...' : 'Procéder'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button 
-                type="button" 
-                variant="secondary"
-                onClick={form.handleSubmit(handleSaveSettings)} 
-                disabled={isTesting || isSending}
-                className="w-full sm:w-auto"
-            >
-              <Save className="mr-2 h-4 w-4" />
-              Sauvegarder
-            </Button>
-            <Button 
-                type="button" 
-                variant="outline"
-                onClick={form.handleSubmit(handleSendTestEmail)} 
-                disabled={isTesting || isSending}
-                className="w-full sm:w-auto"
-            >
-              {isTesting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <MailCheck className="mr-2 h-4 w-4" />
-              )}
-              Email de test
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button type="button" className="w-full flex-1" disabled={isSending || isTesting || recipientCount === 0 || !form.formState.isValid || !form.getValues('pass')}>
-                  {isSending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="mr-2 h-4 w-4" />
-                  )}
-                  Envoyer à {recipientCount > 0 ? recipientCount : ''} Destinataires
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmer l'envoi des e-mails</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Vous êtes sur le point d'envoyer des e-mails aux {recipientCount} destinataires sélectionnés. Le système ignorera ceux qui ont déjà reçu un e-mail pour ce rendez-vous.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={form.handleSubmit(handleSendEmails)} disabled={isSending}>
-                    {isSending ? 'Envoi en cours...' : 'Procéder'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-          {!form.getValues('pass') && (
-            <div className="flex items-center text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 mt-2">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                <span>Le mot de passe est requis pour envoyer des e-mails.</span>
-            </div>
-          )}
-        </form>
-      </Form>
-    </div>
+            {!form.getValues('pass') && (
+              <div className="flex items-center text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 mt-2">
+                  <AlertCircle className="h-5 w-5 mr-2" />
+                  <span>Le mot de passe est requis pour envoyer des e-mails.</span>
+              </div>
+            )}
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 }
