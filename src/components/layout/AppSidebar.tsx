@@ -76,7 +76,7 @@ export default function AppSidebar() {
             </div>
             <nav className="flex flex-col gap-2">
                 {navLinks.map(link => (
-                    <NavLink key={link.href} href={link.href} active={pathname === link.href}>
+                    <NavLink key={link.label} href={link.href} active={pathname === link.href}>
                         <link.icon className="h-4 w-4" /> {link.label}
                     </NavLink>
                 ))}
