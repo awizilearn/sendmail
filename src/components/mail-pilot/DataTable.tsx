@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
-import { Download, CheckCircle2, Trash2 } from 'lucide-react';
+import { Download, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 import {
@@ -33,6 +33,7 @@ import {
 
 type DataTableProps = {
   recipients: MailRecipient[];
+  isLoading: boolean;
   onClear: () => void;
   onSelectionChange: (data: MailRecipient[]) => void;
   onHeadersLoaded: (headers: string[]) => void;
@@ -40,49 +41,42 @@ type DataTableProps = {
   onRowSelect: (row: MailRecipient | null) => void;
 };
 
-export default function DataTable({ recipients, onClear, onSelectionChange, onHeadersLoaded, selectedRow, onRowSelect }: DataTableProps) {
+export default function DataTable({ recipients, isLoading, onClear, onSelectionChange, onHeadersLoaded, selectedRow, onRowSelect }: DataTableProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set<string>());
-  const isLoading = !recipients; // Considered loading if recipients array is not yet available.
 
   const headers = useMemo(() => {
-    if (!recipients || recipients.length === 0) return [];
-    return Object.keys(recipients[0]).filter(key => key !== 'id');
+    if (recipients.length === 0) return [];
+    // Get headers from the first recipient, excluding ownerId
+    const firstRecipientKeys = Object.keys(recipients[0]);
+    return firstRecipientKeys.filter(key => key !== 'ownerId' && key !== 'id');
   }, [recipients]);
 
   useEffect(() => {
-    if (recipients) {
-        const allIds = new Set(recipients.map(r => r.id).filter(Boolean));
-        setSelectedIds(allIds);
-    } else {
-        setSelectedIds(new Set());
-    }
+    // When recipients data changes (e.g., after import), select all by default
+    const allIds = new Set(recipients.map(r => r.id).filter(Boolean));
+    setSelectedIds(allIds);
   }, [recipients]);
 
   useEffect(() => {
-    if (recipients) {
-        const selected = recipients.filter(r => selectedIds.has(r.id));
-        onSelectionChange(selected);
-    } else {
-        onSelectionChange([]);
-    }
+    const selected = recipients.filter(r => selectedIds.has(r.id));
+    onSelectionChange(selected);
   }, [selectedIds, recipients, onSelectionChange]);
   
   useEffect(() => {
     onHeadersLoaded(headers);
   }, [headers, onHeadersLoaded]);
   
-
   const handleClearData = async () => {
     setIsDeleting(true);
-    onClear();
+    await onClear();
     onRowSelect(null);
     setIsDeleting(false);
   };
   
   const handleExport = () => {
     if (!recipients) return;
-    const worksheet = XLSX.utils.json_to_sheet(recipients);
+    const worksheet = XLSX.utils.json_to_sheet(recipients.map(({id, ownerId, ...rest}) => rest));
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Recipients");
     XLSX.writeFile(workbook, "recipients.xlsx");
@@ -90,7 +84,7 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-        setSelectedIds(new Set(recipients?.map(r => r.id).filter(Boolean)));
+        setSelectedIds(new Set(recipients.map(r => r.id).filter(Boolean)));
     } else {
         setSelectedIds(new Set());
     }
@@ -108,9 +102,8 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
       });
   };
 
-  const isAllSelected = recipients ? selectedIds.size === recipients.length && recipients.length > 0 : false;
-  const isSomeSelected = recipients ? selectedIds.size > 0 && selectedIds.size < recipients.length : false;
-
+  const isAllSelected = recipients.length > 0 && selectedIds.size === recipients.length;
+  const isSomeSelected = selectedIds.size > 0 && selectedIds.size < recipients.length;
 
   return (
     <Card>
@@ -119,13 +112,13 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
             <div>
                 <CardTitle className="text-2xl">Aperçu des données</CardTitle>
                 <CardDescription>
-                    Étape 2 sur 4 : Sélectionnez les destinataires pour l'envoi, puis cliquez sur une ligne pour prévisualiser l'e-mail. Total : {recipients?.length ?? 0}.
+                    Étape 2 sur 4 : Sélectionnez les destinataires pour l'envoi, puis cliquez sur une ligne pour prévisualiser l'e-mail. Total : {isLoading ? <Skeleton className="h-4 w-8 inline-block" /> : recipients.length}.
                 </CardDescription>
             </div>
             <div className="flex gap-2">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" disabled={!recipients || recipients.length === 0 || isDeleting}>
+                    <Button variant="destructive" size="sm" disabled={recipients.length === 0 || isDeleting || isLoading}>
                         <Trash2 className="mr-2 h-4 w-4" />
                         Vider
                     </Button>
@@ -134,7 +127,7 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
                     <AlertDialogHeader>
                       <AlertDialogTitle>Êtes-vous sûr de vouloir continuer ?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Cette action est irréversible. Cela supprimera définitivement la liste des destinataires de la session actuelle.
+                        Cette action est irréversible. Cela supprimera définitivement la liste des destinataires de la base de données.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -145,7 +138,7 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                <Button variant="outline" size="sm" onClick={handleExport} disabled={!recipients || recipients.length === 0}>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={recipients.length === 0 || isLoading}>
                     <Download className="mr-2 h-4 w-4" />
                     Exporter
                 </Button>
@@ -162,9 +155,10 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
                                 checked={isAllSelected ? true : isSomeSelected ? "indeterminate" : false}
                                 onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
                                 aria-label="Tout sélectionner"
+                                disabled={isLoading}
                             />
                         </TableHead>
-                        {isLoading && !recipients ? (
+                        {isLoading ? (
                             Array.from({ length: 5 }).map((_, i) => <TableHead key={`skel-head-${i}`}><Skeleton className="h-4 w-24" /></TableHead>)
                         ) : (
                             headers.map((header) => (
@@ -178,23 +172,21 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
                         Array.from({ length: 5 }).map((_, i) => (
                             <TableRow key={`skeleton-${i}`}>
                                 <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                                {headers.length > 0 ? (
-                                    headers.map(h => <TableCell key={h}><Skeleton className="h-4 w-full" /></TableCell>)
-                                ) : (
-                                    Array.from({ length: 4 }).map((_, j) => <TableCell key={`skel-cell-${j}`}><Skeleton className="h-4 w-full" /></TableCell>)
-                                )}
+                                {Array.from({ length: Math.max(headers.length, 5) }).map((_, j) => (
+                                    <TableCell key={`skel-cell-${j}`}><Skeleton className="h-4 w-full" /></TableCell>
+                                ))}
                             </TableRow>
                         ))
-                    ) : recipients?.length === 0 ? (
+                    ) : recipients.length === 0 ? (
                         <TableRow>
                             <TableCell colSpan={headers.length + 1} className="text-center text-muted-foreground h-24">
                                 Aucune donnée. Veuillez importer un fichier pour commencer.
                             </TableCell>
                         </TableRow>
                     ) : (
-                        recipients?.map((row, rowIndex) => (
+                        recipients.map((row) => (
                             <TableRow
-                                key={row.id || rowIndex}
+                                key={row.id}
                                 onClick={() => onRowSelect(row)}
                                 className={cn(
                                     'cursor-pointer',
@@ -211,7 +203,7 @@ export default function DataTable({ recipients, onClear, onSelectionChange, onHe
                                 </TableCell>
                                 {headers.map((header) => (
                                     <TableCell key={header} className="whitespace-nowrap text-sm">
-                                        {String(row[header])}
+                                        {String(row[header] ?? '')}
                                     </TableCell>
                                 ))}
                             </TableRow>

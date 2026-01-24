@@ -2,9 +2,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import * as z from 'zod';
 import { Send, Settings, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { doc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,78 +26,39 @@ import type { MailRecipient } from '@/types/mail-recipient';
 import { Progress } from '../ui/progress';
 import { replacePlaceholders } from '@/lib/placeholder-replacer';
 import type { DeliveryLog } from '@/types/delivery-log';
-
-const smtpSchema = z.object({
-  host: z.string().min(1, 'Host is required'),
-  port: z.coerce.number().min(1, 'Port is required'),
-  user: z.string().min(1, 'Username is required').email('Invalid email address'),
-  pass: z.string(),
-  secure: z.boolean().default(true),
-});
-
-type SmtpConfig = z.infer<typeof smtpSchema>;
+import type { SmtpConfig } from '@/types/smtp-config';
 
 type SmtpSettingsProps = {
   recipients: MailRecipient[];
   emailSubject: string;
   emailBody: string;
-  sentEmailKeys: Set<string>;
-  onEmailLogged: (key: string) => void;
 };
 
-export default function SmtpSettings({ recipients, emailSubject, emailBody, sentEmailKeys, onEmailLogged }: SmtpSettingsProps) {
+export default function SmtpSettings({ recipients, emailSubject, emailBody }: SmtpSettingsProps) {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
   const [isSending, setIsSending] = useState(false);
   const [sendingProgress, setSendingProgress] = useState(0);
   const [sentCount, setSentCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
-  const [smtpConfig, setSmtpConfig] = useState<SmtpConfig | null>(null);
   const recipientCount = recipients.length;
 
-  const { toast } = useToast();
+  const settingsDocRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'smtp-settings', user.uid);
+  }, [user, firestore]);
 
-  useEffect(() => {
-    // Function to load settings, can be recalled
-    const loadSettings = () => {
-        try {
-            const savedSettings = localStorage.getItem('smtpSettings');
-            if (savedSettings) {
-                const parsed = JSON.parse(savedSettings);
-                const result = smtpSchema.safeParse(parsed);
-                if (result.success) {
-                    setSmtpConfig(result.data);
-                } else {
-                    setSmtpConfig(null);
-                }
-            } else {
-                 setSmtpConfig(null);
-            }
-        } catch (error) {
-            console.error("Failed to load SMTP settings from localStorage", error);
-            setSmtpConfig(null);
-        }
-    };
-    
-    loadSettings();
-
-    // Listen for storage changes from other tabs
-    window.addEventListener('storage', loadSettings);
-    
-    // Also listen for a custom event when settings are saved on the same page
-    window.addEventListener('smtp-settings-updated', loadSettings);
-
-    return () => {
-        window.removeEventListener('storage', loadSettings);
-        window.removeEventListener('smtp-settings-updated', loadSettings);
-    };
-  }, []);
+  const { data: smtpConfig, isLoading: isLoadingConfig } = useDoc<SmtpConfig>(settingsDocRef);
 
   const handleSendEmails = async () => {
-    if (!smtpConfig) {
+    if (!smtpConfig || !user || !firestore) {
       toast({
         variant: 'destructive',
-        title: 'Configuration SMTP manquante',
-        description: 'Veuillez configurer vos paramètres SMTP avant d\'envoyer des e-mails.',
+        title: 'Configuration ou utilisateur manquant',
+        description: 'Veuillez configurer vos paramètres SMTP et vous assurer que vous êtes connecté.',
       });
       return;
     }
@@ -107,9 +69,7 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
     setSkippedCount(0);
     setFailedCount(0);
 
-    const existingLogsRaw = localStorage.getItem('deliveryLogs');
-    const existingLogs: DeliveryLog[] = existingLogsRaw ? JSON.parse(existingLogsRaw) : [];
-    const newLogs: DeliveryLog[] = [];
+    const deliveryLogsRef = collection(firestore, 'delivery-logs');
 
     for (let i = 0; i < recipients.length; i++) {
         const recipient = recipients[i];
@@ -122,7 +82,11 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
 
         const emailKey = `${recipientEmail}_${String(recipient['Date du RDV'])}`;
 
-        if (sentEmailKeys.has(emailKey)) {
+        // Check if this email was already sent
+        const q = query(deliveryLogsRef, where('ownerId', '==', user.uid), where('emailKey', '==', emailKey));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
             setSkippedCount(prev => prev + 1);
         } else {
             const personalizedSubject = replacePlaceholders(emailSubject, recipient);
@@ -130,8 +94,9 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
 
             const result = await sendConfiguredEmail(smtpConfig, recipientEmail, personalizedSubject, personalizedBody);
             
-            const logEntry: DeliveryLog = {
-                id: `${recipient.id}-${new Date().toISOString()}`,
+            const logEntry: Omit<DeliveryLog, 'id'> = {
+                ownerId: user.uid,
+                emailKey: emailKey,
                 beneficiary: {
                     name: String(recipient['Bénéficiare'] || ''),
                     email: recipientEmail,
@@ -142,24 +107,16 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
                 status: result.success ? 'Delivered' : 'Failed',
                 sentAt: new Date().toISOString(),
             };
-            newLogs.push(logEntry);
+            
+            await addDoc(deliveryLogsRef, logEntry);
 
             if (result.success) {
-                onEmailLogged(emailKey);
                 setSentCount(prev => prev + 1);
             } else {
                 setFailedCount(prev => prev + 1);
             }
         }
         setSendingProgress(((i + 1) / recipients.length) * 100);
-    }
-
-    if (newLogs.length > 0) {
-        try {
-            localStorage.setItem('deliveryLogs', JSON.stringify([...newLogs, ...existingLogs]));
-        } catch (e) {
-            console.error("Failed to save delivery logs to localStorage", e);
-        }
     }
     
     setIsSending(false);
@@ -180,7 +137,9 @@ export default function SmtpSettings({ recipients, emailSubject, emailBody, sent
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!smtpConfig || !smtpConfig.host || !smtpConfig.user ? (
+        {isLoadingConfig ? (
+            <div className="flex items-center justify-center p-6"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+        ) : !smtpConfig || !smtpConfig.host || !smtpConfig.user ? (
             <div className="flex flex-col items-center justify-center text-center p-6 bg-accent/30 rounded-lg">
                 <AlertCircle className="h-8 w-8 text-muted-foreground mb-2"/>
                 <h3 className="font-semibold">Configuration Requise</h3>

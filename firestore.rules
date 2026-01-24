@@ -2,36 +2,32 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ------------------------------------------------------------------------
-    // Helper Functions
-    // ------------------------------------------------------------------------
-
-    /**
-     * Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
-    
-    // ------------------------------------------------------------------------
-    // Public Data Rules
-    // ------------------------------------------------------------------------
-    
-    /**
-     * @description Controls access to the public collection of trainers.
-     * @path /trainers/{trainerId}
-     * @allow Any user, including unauthenticated ones, can (get) a trainer's document at `/trainers/trainer_123`.
-     * @deny Any user, including authenticated ones, cannot (create) a new trainer document. This must be done via a backend admin SDK.
-     * @principle Allows public read access for globally shared data while denying all client-side writes to maintain data integrity.
-     */
-    match /trainers/{trainerId} {
-      allow get: if true;
-      allow list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'Trainer' entity is missing an 'ownerId' or 'authorId' field.
-      // Disabling all client-side writes is the most secure default. Manage this data with a trusted backend service.
-      allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+
+    function isOwner(ownerId) {
+      return isSignedIn() && request.auth.uid == ownerId;
+    }
+
+    match /users/{userId} {
+      allow read, create: if isOwner(userId);
+    }
+
+    match /recipients/{recipientId} {
+      allow read, delete: if isOwner(resource.data.ownerId);
+      allow create: if isOwner(request.resource.data.ownerId);
+      // Updates are disabled for simplicity. Users can re-import lists.
+      allow update: if false;
+    }
+
+    match /delivery-logs/{logId} {
+      allow read, create: if isOwner(request.resource.data.ownerId) || isOwner(resource.data.ownerId);
+      allow update, delete: if false;
+    }
+
+    match /smtp-settings/{userId} {
+      allow read, write: if isOwner(userId);
     }
   }
 }

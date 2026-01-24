@@ -2,17 +2,18 @@
 'use client';
 
 import { useState, useEffect, useMemo } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { DeliveryLog } from "@/types/delivery-log";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Search, Calendar, Download, Mail as MailIcon, CheckCircle2, AlertCircle, MoreVertical, Filter, Lightbulb, Bell, Moon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
+import { Skeleton } from "@/components/ui/skeleton";
 
 const getStatusAction = (status: string) => {
     switch (status) {
@@ -36,28 +37,24 @@ const getStatusBadge = (status: string) => {
 }
 
 export default function DashboardPage() {
-    const { toast } = useToast();
-    const [deliveryLogs, setDeliveryLogs] = useState<DeliveryLog[]>([]);
+    const { user } = useUser();
+    const firestore = useFirestore();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    useEffect(() => {
-        try {
-            const savedLogs = localStorage.getItem('deliveryLogs');
-            if (savedLogs) {
-                setDeliveryLogs(JSON.parse(savedLogs));
-            }
-        } catch (error) {
-            console.error("Failed to load delivery logs from localStorage", error);
-            toast({
-                variant: 'destructive',
-                title: 'Erreur de chargement',
-                description: 'Impossible de charger les journaux d\'envoi.',
-            });
-        }
-    }, [toast]);
+    const deliveryLogsQuery = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return query(
+            collection(firestore, 'delivery-logs'), 
+            where('ownerId', '==', user.uid),
+            orderBy('sentAt', 'desc')
+        );
+    }, [user, firestore]);
+
+    const { data: deliveryLogs, isLoading: isLoadingLogs } = useCollection<DeliveryLog>(deliveryLogsQuery);
 
     const stats = useMemo(() => {
+        if (!deliveryLogs) return { total: 0, delivered: 0, failed: 0, deliveredRate: 0 };
         const total = deliveryLogs.length;
         const delivered = deliveryLogs.filter(log => log.status === 'Delivered').length;
         const failed = deliveryLogs.filter(log => log.status === 'Failed').length;
@@ -66,11 +63,12 @@ export default function DashboardPage() {
     }, [deliveryLogs]);
 
     const paginatedLogs = useMemo(() => {
+        if (!deliveryLogs) return [];
         const startIndex = (currentPage - 1) * itemsPerPage;
         return deliveryLogs.slice(startIndex, startIndex + itemsPerPage);
     }, [deliveryLogs, currentPage]);
 
-    const totalPages = Math.ceil(deliveryLogs.length / itemsPerPage);
+    const totalPages = deliveryLogs ? Math.ceil(deliveryLogs.length / itemsPerPage) : 1;
 
     return (
         <DashboardLayout>
@@ -112,7 +110,7 @@ export default function DashboardPage() {
                                 <MailIcon className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{stats.total}</div>
+                                <div className="text-2xl font-bold">{isLoadingLogs ? <Skeleton className="h-8 w-16" /> : stats.total}</div>
                             </CardContent>
                         </Card>
                         <Card className="bg-white">
@@ -121,8 +119,8 @@ export default function DashboardPage() {
                                 <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{stats.delivered}</div>
-                                <p className="text-xs text-muted-foreground">{stats.deliveredRate.toFixed(1)}% de réussite</p>
+                                <div className="text-2xl font-bold">{isLoadingLogs ? <Skeleton className="h-8 w-16" /> : stats.delivered}</div>
+                                {!isLoadingLogs && <p className="text-xs text-muted-foreground">{stats.deliveredRate.toFixed(1)}% de réussite</p>}
                             </CardContent>
                         </Card>
                          <Card className="bg-white">
@@ -131,7 +129,7 @@ export default function DashboardPage() {
                                 <AlertCircle className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
+                                <div className="text-2xl font-bold text-red-600">{isLoadingLogs ? <Skeleton className="h-8 w-16" /> : stats.failed}</div>
                             </CardContent>
                         </Card>
                     </div>
@@ -159,39 +157,59 @@ export default function DashboardPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {paginatedLogs.map((log) => (
-                                    <TableRow key={log.id}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar>
-                                                    <AvatarFallback>{log.beneficiary.initials}</AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <div className="font-medium">{log.beneficiary.name}</div>
-                                                    <div className="text-sm text-muted-foreground">{log.beneficiary.email}</div>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>{log.trainer}</TableCell>
-                                        <TableCell>{log.date}</TableCell>
-                                        <TableCell>
-                                            {getStatusBadge(log.status)}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="link" className="p-0 h-auto text-primary">{getStatusAction(log.status)}</Button>
+                                {isLoadingLogs ? (
+                                   Array.from({ length: itemsPerPage }).map((_, i) => (
+                                        <TableRow key={`skel-log-${i}`}>
+                                            <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full" /><div className="space-y-2"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-48" /></div></div></TableCell>
+                                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                            <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                            <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                            <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                                        </TableRow>
+                                   ))
+                                ) : paginatedLogs.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                                            Aucun journal d'envoi trouvé.
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                ) : (
+                                    paginatedLogs.map((log) => (
+                                        <TableRow key={log.id}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar>
+                                                        <AvatarFallback>{log.beneficiary.initials}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <div className="font-medium">{log.beneficiary.name}</div>
+                                                        <div className="text-sm text-muted-foreground">{log.beneficiary.email}</div>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{log.trainer}</TableCell>
+                                            <TableCell>{log.date}</TableCell>
+                                            <TableCell>
+                                                {getStatusBadge(log.status)}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="link" className="p-0 h-auto text-primary">{getStatusAction(log.status)}</Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
-                        <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-                            <span>Affichage de {(currentPage - 1) * itemsPerPage + 1} à {Math.min(currentPage * itemsPerPage, deliveryLogs.length)} sur {deliveryLogs.length} résultats</span>
-                            <div className="flex items-center gap-1">
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>{"<"}</Button>
-                                <span className="px-2">Page {currentPage} sur {totalPages > 0 ? totalPages : 1}</span>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>{">"}</Button>
+                        {deliveryLogs && deliveryLogs.length > 0 && (
+                            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                                <span>Affichage de {(currentPage - 1) * itemsPerPage + 1} à {Math.min(currentPage * itemsPerPage, deliveryLogs.length)} sur {deliveryLogs.length} résultats</span>
+                                <div className="flex items-center gap-1">
+                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>{"<"}</Button>
+                                    <span className="px-2">Page {currentPage} sur {totalPages > 0 ? totalPages : 1}</span>
+                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>{">"}</Button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </CardContent>
                 </Card>
 

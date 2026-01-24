@@ -3,10 +3,13 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Zap, SlidersHorizontal, Eye, EyeOff, CheckCircle2, Info } from "lucide-react";
+import { Zap, SlidersHorizontal, Eye, EyeOff, CheckCircle2, Info, Loader2 } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { doc, setDoc } from 'firebase/firestore';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import type { SmtpConfig } from '@/types/smtp-config';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +20,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from "@/lib/utils";
 import { sendTestEmail } from '@/app/actions';
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const GoogleIcon = (props: React.ComponentProps<'svg'>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18px" height="18px" {...props}>
@@ -42,53 +46,53 @@ const smtpSchema = z.object({
   user: z.string().min(1, "Le nom d'utilisateur est requis").email('Adresse e-mail invalide'),
   pass: z.string(),
   secure: z.boolean().default(true),
-  savePassword: z.boolean().default(false), // just for localstorage logic
+  savePassword: z.boolean().default(false),
 });
 
 export default function SettingsPage() {
     const { toast } = useToast();
+    const { user } = useUser();
+    const firestore = useFirestore();
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isReady, setIsReady] = useState(false);
+    
+    const settingsDocRef = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'smtp-settings', user.uid);
+    }, [user, firestore]);
+
+    const { data: smtpSettings, isLoading: isLoadingSettings } = useDoc<SmtpConfig>(settingsDocRef);
 
     const form = useForm<z.infer<typeof smtpSchema>>({
         resolver: zodResolver(smtpSchema),
         defaultValues: { host: '', port: 587, user: '', pass: '', secure: true, savePassword: false },
     });
-
+    
     useEffect(() => {
-        try {
-            const savedSettings = localStorage.getItem('smtpSettings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                form.reset(settings);
-            }
-        } catch (error) {
-            console.error("Failed to load SMTP settings from localStorage", error);
+        if (smtpSettings) {
+            form.reset(smtpSettings);
         }
-    }, [form]);
+    }, [smtpSettings, form]);
 
     const formValues = form.watch();
-    useEffect(() => {
-        const { host, port, user } = formValues;
-        setIsReady(!!host && !!port && !!user);
-    }, [formValues]);
+    const isReady = !!(formValues.host && formValues.port && formValues.user);
 
-    const handleSaveConfiguration = (values: z.infer<typeof smtpSchema>) => {
+    const handleSaveConfiguration = async (values: z.infer<typeof smtpSchema>) => {
+        if (!settingsDocRef) return;
         setIsSaving(true);
         try {
-            const { pass, ...settingsToSave } = values;
-            const finalSettings = {
-                ...settingsToSave,
-                pass: values.savePassword ? pass : '',
+            const settingsToSave: SmtpConfig = {
+                ...values,
+                pass: values.savePassword ? values.pass : '',
             };
-            localStorage.setItem('smtpSettings', JSON.stringify(finalSettings));
+            await setDoc(settingsDocRef, settingsToSave, { merge: true });
             toast({
                 title: 'Configuration Enregistrée',
                 description: 'Vos paramètres de connexion ont été sauvegardés.',
             });
         } catch (error) {
+            console.error("Failed to save SMTP settings to Firestore", error);
             toast({
                 variant: 'destructive',
                 title: 'Erreur de Sauvegarde',
@@ -157,75 +161,111 @@ export default function SettingsPage() {
                         <CardDescription>Pour les serveurs de messagerie personnalisés ou d'entreprise qui ne prennent pas en charge la connexion directe OAuth.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                       <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleSaveConfiguration)} className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                                 <FormField control={form.control} name="host" render={({ field }) => (
-                                    <FormItem className="md:col-span-1">
-                                        <FormLabel>Hôte SMTP</FormLabel>
-                                        <FormControl><Input placeholder="smtp.example.com" {...field} /></FormControl>
-                                    </FormItem>
-                                )} />
-                                <FormField control={form.control} name="port" render={({ field }) => (
-                                    <FormItem className="md:col-span-1">
-                                        <FormLabel>Port</FormLabel>
-                                        <FormControl><Input type="number" placeholder="587" {...field} /></FormControl>
-                                    </FormItem>
-                                )} />
-                                <FormField control={form.control} name="user" render={({ field }) => (
-                                    <FormItem className="md:col-span-1">
-                                        <FormLabel>Nom d'utilisateur</FormLabel>
-                                        <FormControl><Input type="email" placeholder="user@company.com" {...field} /></FormControl>
-                                    </FormItem>
-                                )} />
-                                <FormField control={form.control} name="pass" render={({ field }) => (
-                                    <FormItem className="md:col-span-1">
-                                        <FormLabel>Mot de passe</FormLabel>
-                                        <div className="relative">
-                                            <FormControl><Input type={passwordVisible ? 'text' : 'password'} placeholder="••••••••" {...field} /></FormControl>
-                                            <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground" onClick={() => setPasswordVisible(!passwordVisible)}>
-                                                {passwordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                            </Button>
+                        {isLoadingSettings ? (
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                    <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-10 w-full" /></div>
+                                    <div className="space-y-2"><Skeleton className="h-4 w-16" /><Skeleton className="h-10 w-full" /></div>
+                                    <div className="space-y-2"><Skeleton className="h-4 w-32" /><Skeleton className="h-10 w-full" /></div>
+                                    <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-10 w-full" /></div>
+                                </div>
+                                <Skeleton className="h-20 w-full" />
+                            </div>
+                        ) : (
+                           <Form {...form}>
+                            <form onSubmit={form.handleSubmit(handleSaveConfiguration)} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                     <FormField control={form.control} name="host" render={({ field }) => (
+                                        <FormItem className="md:col-span-1">
+                                            <FormLabel>Hôte SMTP</FormLabel>
+                                            <FormControl><Input placeholder="smtp.example.com" {...field} /></FormControl>
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="port" render={({ field }) => (
+                                        <FormItem className="md:col-span-1">
+                                            <FormLabel>Port</FormLabel>
+                                            <FormControl><Input type="number" placeholder="587" {...field} /></FormControl>
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="user" render={({ field }) => (
+                                        <FormItem className="md:col-span-1">
+                                            <FormLabel>Nom d'utilisateur</FormLabel>
+                                            <FormControl><Input type="email" placeholder="user@company.com" {...field} /></FormControl>
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="pass" render={({ field }) => (
+                                        <FormItem className="md:col-span-1">
+                                            <FormLabel>Mot de passe</FormLabel>
+                                            <div className="relative">
+                                                <FormControl><Input type={passwordVisible ? 'text' : 'password'} placeholder="••••••••" {...field} /></FormControl>
+                                                <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground" onClick={() => setPasswordVisible(!passwordVisible)}>
+                                                    {passwordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                </Button>
+                                            </div>
+                                        </FormItem>
+                                    )} />
+                                </div>
+                                <div className="space-y-4">
+                                  <FormField
+                                      control={form.control}
+                                      name="secure"
+                                      render={({ field }) => (
+                                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                          <div className="space-y-0.5">
+                                              <FormLabel>Chiffrement SSL/TLS</FormLabel>
+                                              <FormDescription>
+                                                  Sécurisez votre connexion avec le chiffrement SSL/TLS
+                                              </FormDescription>
+                                          </div>
+                                          <FormControl>
+                                          <Switch
+                                              checked={field.value}
+                                              onCheckedChange={field.onChange}
+                                          />
+                                          </FormControl>
+                                      </FormItem>
+                                      )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name="savePassword"
+                                    render={({ field }) => (
+                                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                          <FormLabel>Sauvegarder le mot de passe</FormLabel>
+                                          <FormDescription>
+                                            Stockez votre mot de passe de manière sécurisée pour ne pas avoir à le ressaisir.
+                                          </FormDescription>
                                         </div>
-                                    </FormItem>
-                                )} />
-                            </div>
-                            <FormField
-                                control={form.control}
-                                name="secure"
-                                render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <FormLabel>Chiffrement SSL/TLS</FormLabel>
-                                        <FormDescription>
-                                            Sécurisez votre connexion avec le chiffrement SSL/TLS
-                                        </FormDescription>
+                                        <FormControl>
+                                          <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between mt-4 border-t pt-6">
+                                     <div className={cn("flex items-center gap-2 text-sm", isReady ? "text-green-600" : "text-muted-foreground")}>
+                                        {isReady && <CheckCircle2 className="h-4 w-4" />}
+                                        <span>{isReady ? "Prêt à tester la connexion" : "Veuillez remplir les champs requis"}</span>
                                     </div>
-                                    <FormControl>
-                                    <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                    />
-                                    </FormControl>
-                                </FormItem>
-                                )}
-                            />
-                            <div className="flex items-center justify-between mt-4 border-t pt-6">
-                                 <div className={cn("flex items-center gap-2 text-sm", isReady ? "text-green-600" : "text-muted-foreground")}>
-                                    {isReady && <CheckCircle2 className="h-4 w-4" />}
-                                    <span>{isReady ? "Prêt à tester la connexion" : "Veuillez remplir les champs requis"}</span>
+                                    <div className="flex items-center gap-2">
+                                        <Button type="button" variant="outline" onClick={form.handleSubmit(handleTestConnection)} disabled={!isReady || isTesting}>
+                                            {isTesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            {isTesting ? "Test en cours..." : "Tester la connexion"}
+                                        </Button>
+                                        <Button type="submit" disabled={!isReady || isSaving}>
+                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            {isSaving ? "Enregistrement..." : "Sauvegarder la configuration"}
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Button type="button" variant="outline" onClick={form.handleSubmit(handleTestConnection)} disabled={!isReady || isTesting}>
-                                        {isTesting ? "Test en cours..." : "Tester la connexion"}
-                                    </Button>
-                                    <Button type="submit" disabled={!isReady || isSaving}>
-                                        {isSaving ? "Enregistrement..." : "Sauvegarder la configuration"}
-                                    </Button>
-                                </div>
-                            </div>
-                        </form>
-                       </Form>
+                            </form>
+                           </Form>
+                        )}
                     </CardContent>
                 </Card>
 

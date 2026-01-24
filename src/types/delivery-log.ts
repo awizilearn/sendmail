@@ -1,6 +1,8 @@
 
 export type DeliveryLog = {
   id: string;
+  ownerId: string;
+  emailKey: string;
   beneficiary: {
     name: string;
     email: string;

@@ -1,57 +1,106 @@
 {
   "entities": {
-    "Trainer": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Trainer",
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's profile information.",
       "type": "object",
-      "description": "Represents a trainer associated with an appointment",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the trainer."
-        },
-        "firstName": {
-          "type": "string",
-          "description": "First name of the trainer."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "Last name of the trainer."
-        }
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" }
       },
-      "required": [
-        "id",
-        "firstName",
-        "lastName"
-      ]
+      "required": ["email"]
+    },
+    "Recipient": {
+      "title": "Recipient",
+      "description": "An email recipient imported from an Excel file. It's a flat object with an ownerId.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "description": "The UID of the user who owns this recipient." }
+      },
+      "required": ["ownerId"],
+      "additionalProperties": {
+        "anyOf": [
+          { "type": "string" },
+          { "type": "number" },
+          { "type": "boolean" }
+        ]
+      }
+    },
+    "DeliveryLog": {
+      "title": "Delivery Log",
+      "description": "A log entry for an email delivery attempt.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "description": "The UID of the user who owns this log." },
+        "emailKey": { "type": "string", "description": "A unique key to identify an email event to prevent duplicates." },
+        "status": { "type": "string", "enum": ["Delivered", "Failed"] },
+        "sentAt": { "type": "string", "format": "date-time" },
+        "beneficiary": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "email": { "type": "string" },
+            "initials": { "type": "string" }
+          }
+        },
+        "trainer": { "type": "string" },
+        "date": { "type": "string" }
+      },
+      "required": ["ownerId", "status", "sentAt", "beneficiary", "emailKey"]
+    },
+    "SmtpSettings": {
+      "title": "SMTP Settings",
+      "description": "User's SMTP configuration.",
+      "type": "object",
+      "properties": {
+        "host": { "type": "string" },
+        "port": { "type": "number" },
+        "user": { "type": "string" },
+        "pass": { "type": "string", "description": "User's SMTP password." },
+        "secure": { "type": "boolean" },
+        "savePassword": { "type": "boolean" }
+      },
+      "required": ["host", "port", "user", "secure"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous",
-      "google.com"
-    ]
+    "providers": ["password", "anonymous", "google.com"]
   },
   "firestore": {
     "structure": [
       {
-        "path": "/trainers/{trainerId}",
+        "path": "/users/{userId}",
         "definition": {
-          "entityName": "Trainer",
-          "schema": {
-            "$ref": "#/backend/entities/Trainer"
-          },
-          "description": "Stores information about trainers. Publicly accessible.",
-          "params": [
-            {
-              "name": "trainerId",
-              "description": "The unique ID of the trainer."
-            }
-          ]
+          "entityName": "UserProfile",
+          "schema": { "$ref": "#/entities/UserProfile" },
+          "description": "Stores user profile information."
+        }
+      },
+      {
+        "path": "/recipients/{recipientId}",
+        "definition": {
+          "entityName": "Recipient",
+          "schema": { "$ref": "#/entities/Recipient" },
+          "description": "Stores all email recipients, partitioned by owner."
+        }
+      },
+      {
+        "path": "/delivery-logs/{logId}",
+        "definition": {
+          "entityName": "DeliveryLog",
+          "schema": { "$ref": "#/entities/DeliveryLog" },
+          "description": "Stores all delivery logs, partitioned by owner."
+        }
+      },
+      {
+        "path": "/smtp-settings/{userId}",
+        "definition": {
+          "entityName": "SmtpSettings",
+          "schema": { "$ref": "#/entities/SmtpSettings" },
+          "description": "Stores SMTP settings for each user. The document ID is the user's UID."
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the Mail Pilot application's requirements, focusing on secure data access, scalability, and ease of debugging. The primary goal is to facilitate the efficient import of Excel data, personalized email composition, and email sending, all while maintaining a clear and secure authorization model.\n\n**Authorization Independence:** The structure prioritizes authorization independence to enable atomic operations and simplify security rules.  This is primarily achieved through path-based ownership for Recipients and their associated data (Appointments, EmailLogs).\n\n**Structural Segregation:** Data with different access requirements is segregated into separate collections, simplifying security rules and ensuring that each collection has a homogeneous security posture.  For example, recipient-specific data is stored under the `/users/{userId}` path.\n\n**Access Modeling:**\n*   **Private User Data:** Uses path-based ownership for user-related data. Recipients and their related Appointments and EmailLogs are stored under `/users/{userId}`, making security rules straightforward. The system relies solely on `request.auth.uid`.\n*   **QAPs (Rules Are Not Filters):** The structure enables secure `list` operations by using path-based ownership. Listing recipients, appointments, or email logs can be done securely by scoping the query to the current user's path (`/users/{userId}`).\n\n**Data Clarity and Predictability:** The structure enforces clear naming conventions and explicit state modeling to improve debuggability and maintainability. Field names are semantic, and wildcards are descriptive."
+    "reasoning": "The data is structured to be user-centric, ensuring data isolation and security. Top-level collections are used for major data types, with an 'ownerId' field for ownership-based security rules, which simplifies queries and rules. User-specific settings are stored in a collection where the document ID is the user's UID for direct access."
   }
 }

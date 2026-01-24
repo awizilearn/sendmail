@@ -1,7 +1,9 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { collection, query, where, writeBatch, getDocs } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { MailRecipient } from "@/types/mail-recipient";
 
 import ExcelImporter from "@/components/mail-pilot/ExcelImporter";
@@ -13,10 +15,11 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 
 export default function Home() {
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
-  const [recipients, setRecipients] = useState<MailRecipient[]>([]);
-  const [recipientsForSmtp, setRecipientsForSmtp] = useState<MailRecipient[]>([]);
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
+  const [recipientsForSmtp, setRecipientsForSmtp] = useState<MailRecipient[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   
   const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre {{formateur/formatrice}} {{PLATEFORME}}`);
@@ -28,29 +31,62 @@ Veuillez tenir informé votre {{formateur/formatrice}} en cas d'empêchement.
 
 Cordialement`);
 
-  const [sentEmailKeys, setSentEmailKeys] = useState(new Set<string>());
+  const recipientsQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(collection(firestore, 'recipients'), where('ownerId', '==', user.uid));
+  }, [user, firestore]);
 
-  const handleDataImported = (data: MailRecipient[]) => {
-    setRecipients(data);
-    setSelectedRecipient(null);
-    setSentEmailKeys(new Set<string>()); // Reset sent history on new import
-  };
+  const { data: recipients, isLoading: isLoadingRecipients } = useCollection<MailRecipient>(recipientsQuery);
 
-  const handleClearRecipients = () => {
-    setRecipients([]);
-    setRecipientsForSmtp([]);
-    setSelectedRecipient(null);
-    setSentEmailKeys(new Set<string>());
-    toast({ title: "Données effacées", description: "La liste des destinataires a été vidée." });
-  };
-  
-  const handleLogEmail = (key: string) => {
-    setSentEmailKeys(prev => new Set(prev).add(key));
-  };
+  const handleDataImported = useCallback(async (data: MailRecipient[]) => {
+    if (!user || !firestore) {
+      toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
+      return;
+    }
 
-  const handleRowSelect = (recipient: MailRecipient | null) => {
-    setSelectedRecipient(recipient);
-  };
+    // First, clear existing recipients for this user
+    await handleClearRecipients(false);
+
+    const batch = writeBatch(firestore);
+    data.forEach(recipient => {
+      const { id, ...rest } = recipient;
+      const docRef = collection(firestore, 'recipients');
+      batch.set(doc(docRef), { ...rest, ownerId: user.uid });
+    });
+
+    try {
+      await batch.commit();
+      toast({ title: "Importation réussie", description: `${data.length} destinataires ont été enregistrés.` });
+    } catch (error) {
+      console.error("Error importing recipients: ", error);
+      toast({ variant: "destructive", title: "Erreur d'importation", description: "Impossible d'enregistrer les destinataires." });
+    }
+  }, [user, firestore, toast]);
+
+  const handleClearRecipients = useCallback(async (showToast = true) => {
+    if (!recipientsQuery || !firestore) return;
+    
+    try {
+      const querySnapshot = await getDocs(recipientsQuery);
+      if (querySnapshot.empty) {
+        if (showToast) toast({ title: "Données effacées", description: "La liste des destinataires était déjà vide." });
+        return;
+      }
+
+      const batch = writeBatch(firestore);
+      querySnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      
+      setSelectedRecipient(null);
+      setRecipientsForSmtp([]);
+      if (showToast) toast({ title: "Données effacées", description: "La liste des destinataires a été vidée." });
+    } catch (error) {
+        console.error("Error clearing recipients: ", error);
+        if (showToast) toast({ variant: "destructive", title: "Erreur", description: "Impossible de vider la liste des destinataires." });
+    }
+  }, [recipientsQuery, firestore, toast]);
 
   return (
     <DashboardLayout>
@@ -66,16 +102,17 @@ Cordialement`);
           
           <div className="space-y-8">
               <DataTable 
-                recipients={recipients}
+                recipients={recipients || []}
+                isLoading={isLoadingRecipients}
                 onClear={handleClearRecipients}
                 onSelectionChange={setRecipientsForSmtp}
                 onHeadersLoaded={setHeaders}
                 selectedRow={selectedRecipient}
-                onRowSelect={handleRowSelect}
+                onRowSelect={setSelectedRecipient}
               />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 <EmailComposer 
-                  key={selectedRecipient ? JSON.stringify(selectedRecipient) : 'empty'}
+                  key={selectedRecipient ? selectedRecipient.id : 'empty'}
                   selectedRecipient={selectedRecipient}
                   headers={headers}
                   subject={emailSubject}
@@ -87,8 +124,6 @@ Cordialement`);
                   recipients={recipientsForSmtp}
                   emailBody={emailBody}
                   emailSubject={emailSubject}
-                  sentEmailKeys={sentEmailKeys}
-                  onEmailLogged={handleLogEmail}
                 />
               </div>
           </div>
