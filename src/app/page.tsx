@@ -1,50 +1,17 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from 'next/navigation';
-import { signOut } from "firebase/auth";
-import { LayoutDashboard, Upload, Mail, Users, Settings, Bell, Calendar } from "lucide-react";
-import { useUser, useAuth } from "@/firebase";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 import type { MailRecipient } from "@/types/mail-recipient";
-import Link from 'next/link';
-
 
 import ExcelImporter from "@/components/mail-pilot/ExcelImporter";
 import DataTable from "@/components/mail-pilot/DataTable";
 import EmailComposer from "@/components/mail-pilot/EmailComposer";
 import SmtpSettings from "@/components/mail-pilot/SmtpSettings";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-
-const NsConseilLogo = () => (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1.5" y="1.5" width="29" height="29" rx="4" fill="hsl(var(--primary))"/>
-        <g transform="translate(0 -2)">
-            <path d="M16 4L26 16L16 28L6 16L16 4Z" stroke="hsl(var(--primary-foreground))" strokeWidth="2"/>
-            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="hsl(var(--primary))">TCP</text>
-        </g>
-    </svg>
-);
-
-const NavLink = ({ href, children, active = false }: { href: string; children: React.ReactNode; active?: boolean }) => (
-  <Link
-    href={href}
-    className={cn(
-      "flex items-center gap-3 rounded-lg px-3 py-2 text-foreground transition-all hover:bg-accent hover:text-accent-foreground",
-      active && "bg-accent text-accent-foreground font-semibold"
-    )}
-  >
-    {children}
-  </Link>
-);
+import { useToast } from "@/hooks/use-toast";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 export default function Home() {
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
 
   const [recipients, setRecipients] = useState<MailRecipient[]>([]);
@@ -81,80 +48,12 @@ Cordialement`);
     setSentEmailKeys(prev => new Set(prev).add(key));
   };
 
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
-
   const handleRowSelect = (recipient: MailRecipient | null) => {
     setSelectedRecipient(recipient);
   };
-  
-  const getInitials = (email?: string | null, name?: string | null) => {
-    if (name) return name.charAt(0).toUpperCase();
-    if (email) return email.charAt(0).toUpperCase();
-    return '?';
-  };
-
-  if (isUserLoading || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <p>Chargement...</p>
-      </div>
-    );
-  }
-  
-  const navLinks = [
-    { href: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
-    { href: "#", icon: Calendar, label: "Rendez-vous" },
-    { href: "/", icon: Upload, label: "Imports Excel" },
-    { href: "/settings", icon: Mail, label: "Paramètres E-mail" },
-    { href: "#", icon: Bell, label: "Notifications" },
-  ];
 
   return (
-    <div className="flex min-h-screen w-full bg-background text-foreground">
-      <aside className="hidden w-64 flex-col border-r bg-white p-4 sm:flex">
-        <div className="flex items-center gap-3 mb-8">
-            <NsConseilLogo />
-            <div className="flex flex-col">
-              <h1 className="text-lg font-bold text-primary">
-                Training Center Pro
-              </h1>
-              <p className="text-xs text-muted-foreground">Automation Suite</p>
-            </div>
-        </div>
-        <nav className="flex flex-col gap-2">
-           {navLinks.map(link => (
-              <NavLink key={link.href} href={link.href} active={link.href === '/'}>
-                  <link.icon className="h-4 w-4" /> {link.label}
-              </NavLink>
-          ))}
-        </nav>
-        <div className="mt-auto">
-            <nav className="flex flex-col gap-2 mb-4">
-                <NavLink href="/settings"><Settings className="h-4 w-4" /> Paramètres</NavLink>
-            </nav>
-            {user && (
-            <div className="flex items-center gap-3 rounded-lg p-2">
-                <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.photoURL || "#"} alt="Avatar" />
-                    <AvatarFallback>{getInitials(user.email, user.displayName || "Compte Admin")}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col items-start text-left">
-                    <p className="text-sm font-medium leading-none">
-                    Compte Admin
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      Forfait Pro
-                    </p>
-                </div>
-            </div>
-           )}
-        </div>
-      </aside>
-      <main className="flex-1 p-4 md:p-8 space-y-8 overflow-auto">
+    <DashboardLayout>
         <header className="flex items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Imports Excel</p>
@@ -194,7 +93,6 @@ Cordialement`);
               </div>
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 }
