@@ -38,13 +38,13 @@ Cordialement`);
   const { data: recipients, isLoading: isLoadingRecipients } = useCollection<MailRecipient>(recipientsQuery);
   
   useEffect(() => {
-    if (recipients) {
-        const allIds = new Set(recipients.map(r => r.id).filter(Boolean));
-        setSelectedIds(allIds);
-    } else {
-        setSelectedIds(new Set());
+    const newIdSet = recipients ? new Set(recipients.map(r => r.id).filter(Boolean)) : new Set<string>();
+
+    // Prevent infinite loop by comparing the sets before updating state
+    if (newIdSet.size !== selectedIds.size || ![...newIdSet].every(id => selectedIds.has(id))) {
+      setSelectedIds(newIdSet);
     }
-  }, [recipients]);
+  }, [recipients, selectedIds]);
 
   const headers = useMemo(() => {
       if (!recipients || recipients.length === 0) return [];
