@@ -1,16 +1,13 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { PencilRuler, Wand2 } from 'lucide-react';
+import { useState } from 'react';
+import { Wand2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
@@ -18,11 +15,6 @@ import { useToast } from '@/hooks/use-toast';
 import { getAIGeneratedMessage } from '@/app/actions';
 import EmailPreview from './EmailPreview';
 import type { MailRecipient } from '@/types/mail-recipient';
-
-const formSchema = z.object({
-  subject: z.string().min(1, 'Le sujet est requis.'),
-  body: z.string().min(1, "Le corps de l'e-mail est requis."),
-});
 
 type EmailComposerProps = {
   selectedRecipient: MailRecipient | null;
@@ -36,40 +28,24 @@ type EmailComposerProps = {
 export default function EmailComposer({ 
   selectedRecipient, 
   headers,
-  subject: initialSubject,
+  subject,
   onSubjectChange,
-  body: initialBody,
+  body,
   onBodyChange
 }: EmailComposerProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    values: { subject: initialSubject, body: initialBody },
-  });
-
-  const subject = form.watch('subject');
-  const body = form.watch('body');
-
-  useEffect(() => {
-    onSubjectChange(subject);
-  }, [subject, onSubjectChange]);
-
-  useEffect(() => {
-    onBodyChange(body);
-  }, [body, onBodyChange]);
-
   const insertVariable = (variable: string) => {
-    const textarea = document.querySelector('textarea[name="body"]') as HTMLTextAreaElement;
+    const textarea = document.querySelector('textarea#email-body') as HTMLTextAreaElement;
     if (!textarea) return;
     
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const currentBody = form.getValues('body');
+    const currentBody = body;
     const newBody = `${currentBody.substring(0, start)}{{${variable}}}${currentBody.substring(end)}`;
     
-    form.setValue('body', newBody, { shouldValidate: true });
+    onBodyChange(newBody);
 
     // Move cursor after inserted variable
     setTimeout(() => {
@@ -100,8 +76,7 @@ export default function EmailComposer({
 
       const result = await getAIGeneratedMessage(input);
       if (result.success) {
-        const currentBody = form.getValues('body');
-        form.setValue('body', currentBody + '\n\n' + result.message, { shouldValidate: true });
+        onBodyChange(body + '\n\n' + result.message);
         toast({
           title: 'Suggestion IA ajoutée',
           description: "Un nouveau paragraphe a été ajouté au corps de l'e-mail.",
@@ -132,36 +107,27 @@ export default function EmailComposer({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 gap-6">
-          <Form {...form}>
-            <form className="space-y-4">
-              <FormField
-                control={form.control}
-                name="subject"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sujet</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Sujet de l'e-mail" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="body"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Corps de l'e-mail</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Corps de l'e-mail..." className="min-h-[200px] text-sm leading-relaxed" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
+          <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email-subject">Sujet</Label>
+                <Input 
+                  id="email-subject" 
+                  placeholder="Sujet de l'e-mail" 
+                  value={subject}
+                  onChange={(e) => onSubjectChange(e.target.value)} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email-body">Corps de l'e-mail</Label>
+                <Textarea 
+                  id="email-body"
+                  placeholder="Corps de l'e-mail..." 
+                  className="min-h-[200px] text-sm leading-relaxed" 
+                  value={body}
+                  onChange={(e) => onBodyChange(e.target.value)}
+                />
+              </div>
+          </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={handleGenerateAI} disabled={isGenerating || !selectedRecipient} size="sm">
