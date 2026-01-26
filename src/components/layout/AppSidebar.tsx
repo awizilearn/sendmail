@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -6,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { signOut } from "firebase/auth";
 import { useUser, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { LayoutDashboard, Upload, Mail, Settings, Bell, Calendar, LogOut } from "lucide-react";
+import { Upload, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -35,11 +34,7 @@ const NavLink = ({ href, children, active = false }: { href: string; children: R
 );
 
 const navLinks = [
-    { href: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
-    { href: "/appointments", icon: Calendar, label: "Rendez-vous" },
     { href: "/", icon: Upload, label: "Imports Excel" },
-    { href: "/settings", icon: Mail, label: "Paramètres E-mail" },
-    { href: "#", icon: Bell, label: "Notifications" },
 ];
 
 export default function AppSidebar() {
@@ -82,9 +77,6 @@ export default function AppSidebar() {
                 ))}
             </nav>
             <div className="mt-auto">
-                <nav className="flex flex-col gap-2 mb-4">
-                    <NavLink href="/settings" active={pathname === '/settings'}><Settings className="h-4 w-4" /> Paramètres</NavLink>
-                </nav>
                 {user && (
                     <div className="flex items-center justify-between gap-3 rounded-lg p-2">
                         <div className="flex items-center gap-3">
