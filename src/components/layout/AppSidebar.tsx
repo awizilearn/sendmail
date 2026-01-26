@@ -36,7 +36,7 @@ const NavLink = ({ href, children, active = false }: { href: string; children: R
 
 const navLinks = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
-    { href: "#", icon: Calendar, label: "Rendez-vous" },
+    { href: "/appointments", icon: Calendar, label: "Rendez-vous" },
     { href: "/", icon: Upload, label: "Imports Excel" },
     { href: "/settings", icon: Mail, label: "Paramètres E-mail" },
     { href: "#", icon: Bell, label: "Notifications" },
