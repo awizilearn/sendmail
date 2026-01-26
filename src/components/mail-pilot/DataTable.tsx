@@ -111,9 +111,9 @@ export default function DataTable({ recipients, isLoading, onClear, onSelectionC
         <div className="flex justify-between items-start">
             <div>
                 <CardTitle className="text-2xl">Aperçu des données</CardTitle>
-                <CardDescription>
+                <div className="text-sm text-muted-foreground">
                     Étape 2 sur 4 : Sélectionnez les destinataires pour l'envoi, puis cliquez sur une ligne pour prévisualiser l'e-mail. Total : {isLoading ? <Skeleton className="h-4 w-8 inline-block" /> : recipients.length}.
-                </CardDescription>
+                </div>
             </div>
             <div className="flex gap-2">
                 <AlertDialog>
