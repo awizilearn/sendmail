@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Download, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -35,38 +35,16 @@ type DataTableProps = {
   recipients: MailRecipient[];
   isLoading: boolean;
   onClear: () => void;
-  onSelectionChange: (data: MailRecipient[]) => void;
-  onHeadersLoaded: (headers: string[]) => void;
+  headers: string[];
+  selectedIds: Set<string>;
+  onSelectedIdsChange: (ids: Set<string> | ((current: Set<string>) => Set<string>)) => void;
   selectedRow: MailRecipient | null;
   onRowSelect: (row: MailRecipient | null) => void;
 };
 
-export default function DataTable({ recipients, isLoading, onClear, onSelectionChange, onHeadersLoaded, selectedRow, onRowSelect }: DataTableProps) {
+export default function DataTable({ recipients, isLoading, onClear, headers, selectedIds, onSelectedIdsChange, selectedRow, onRowSelect }: DataTableProps) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(new Set<string>());
 
-  const headers = useMemo(() => {
-    if (recipients.length === 0) return [];
-    // Get headers from the first recipient, excluding ownerId
-    const firstRecipientKeys = Object.keys(recipients[0]);
-    return firstRecipientKeys.filter(key => key !== 'ownerId' && key !== 'id');
-  }, [recipients]);
-
-  useEffect(() => {
-    // When recipients data changes (e.g., after import), select all by default
-    const allIds = new Set(recipients.map(r => r.id).filter(Boolean));
-    setSelectedIds(allIds);
-  }, [recipients]);
-
-  useEffect(() => {
-    const selected = recipients.filter(r => selectedIds.has(r.id));
-    onSelectionChange(selected);
-  }, [selectedIds, recipients, onSelectionChange]);
-  
-  useEffect(() => {
-    onHeadersLoaded(headers);
-  }, [headers, onHeadersLoaded]);
-  
   const handleClearData = async () => {
     setIsDeleting(true);
     await onClear();
@@ -84,14 +62,14 @@ export default function DataTable({ recipients, isLoading, onClear, onSelectionC
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-        setSelectedIds(new Set(recipients.map(r => r.id).filter(Boolean)));
+        onSelectedIdsChange(new Set(recipients.map(r => r.id).filter(Boolean)));
     } else {
-        setSelectedIds(new Set());
+        onSelectedIdsChange(new Set());
     }
   };
 
   const handleRowToggle = (rowId: string) => {
-      setSelectedIds(prev => {
+      onSelectedIdsChange(prev => {
           const newSet = new Set(prev);
           if (newSet.has(rowId)) {
               newSet.delete(rowId);

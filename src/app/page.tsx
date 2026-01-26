@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { collection, query, where, writeBatch, getDocs } from 'firebase/firestore';
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { collection, query, where, writeBatch, getDocs, doc } from 'firebase/firestore';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { MailRecipient } from "@/types/mail-recipient";
 
@@ -19,8 +19,7 @@ export default function Home() {
   const firestore = useFirestore();
 
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
-  const [recipientsForSmtp, setRecipientsForSmtp] = useState<MailRecipient[]>([]);
-  const [headers, setHeaders] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState(new Set<string>());
   
   const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre {{formateur/formatrice}} {{PLATEFORME}}`);
   const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},
@@ -37,31 +36,26 @@ Cordialement`);
   }, [user, firestore]);
 
   const { data: recipients, isLoading: isLoadingRecipients } = useCollection<MailRecipient>(recipientsQuery);
-
-  const handleDataImported = useCallback(async (data: MailRecipient[]) => {
-    if (!user || !firestore) {
-      toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
-      return;
+  
+  useEffect(() => {
+    if (recipients) {
+        const allIds = new Set(recipients.map(r => r.id).filter(Boolean));
+        setSelectedIds(allIds);
+    } else {
+        setSelectedIds(new Set());
     }
+  }, [recipients]);
 
-    // First, clear existing recipients for this user
-    await handleClearRecipients(false);
+  const headers = useMemo(() => {
+      if (!recipients || recipients.length === 0) return [];
+      const firstRecipientKeys = Object.keys(recipients[0]);
+      return firstRecipientKeys.filter(key => key !== 'ownerId' && key !== 'id');
+  }, [recipients]);
 
-    const batch = writeBatch(firestore);
-    data.forEach(recipient => {
-      const { id, ...rest } = recipient;
-      const docRef = collection(firestore, 'recipients');
-      batch.set(doc(docRef), { ...rest, ownerId: user.uid });
-    });
-
-    try {
-      await batch.commit();
-      toast({ title: "Importation réussie", description: `${data.length} destinataires ont été enregistrés.` });
-    } catch (error) {
-      console.error("Error importing recipients: ", error);
-      toast({ variant: "destructive", title: "Erreur d'importation", description: "Impossible d'enregistrer les destinataires." });
-    }
-  }, [user, firestore, toast]);
+  const recipientsForSmtp = useMemo(() => {
+      if (!recipients) return [];
+      return recipients.filter(r => selectedIds.has(r.id));
+  }, [recipients, selectedIds]);
 
   const handleClearRecipients = useCallback(async (showToast = true) => {
     if (!recipientsQuery || !firestore) return;
@@ -80,13 +74,38 @@ Cordialement`);
       await batch.commit();
       
       setSelectedRecipient(null);
-      setRecipientsForSmtp([]);
       if (showToast) toast({ title: "Données effacées", description: "La liste des destinataires a été vidée." });
     } catch (error) {
         console.error("Error clearing recipients: ", error);
         if (showToast) toast({ variant: "destructive", title: "Erreur", description: "Impossible de vider la liste des destinataires." });
     }
   }, [recipientsQuery, firestore, toast]);
+
+  const handleDataImported = useCallback(async (data: MailRecipient[]) => {
+    if (!user || !firestore) {
+      toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
+      return;
+    }
+
+    // First, clear existing recipients for this user
+    await handleClearRecipients(false);
+
+    const batch = writeBatch(firestore);
+    const recipientsCollection = collection(firestore, 'recipients');
+    data.forEach(recipient => {
+      const { id, ...rest } = recipient;
+      const newDocRef = doc(recipientsCollection);
+      batch.set(newDocRef, { ...rest, ownerId: user.uid });
+    });
+
+    try {
+      await batch.commit();
+      toast({ title: "Importation réussie", description: `${data.length} destinataires ont été enregistrés.` });
+    } catch (error) {
+      console.error("Error importing recipients: ", error);
+      toast({ variant: "destructive", title: "Erreur d'importation", description: "Impossible d'enregistrer les destinataires." });
+    }
+  }, [user, firestore, toast, handleClearRecipients]);
 
   return (
     <DashboardLayout>
@@ -105,8 +124,9 @@ Cordialement`);
                 recipients={recipients || []}
                 isLoading={isLoadingRecipients}
                 onClear={handleClearRecipients}
-                onSelectionChange={setRecipientsForSmtp}
-                onHeadersLoaded={setHeaders}
+                headers={headers}
+                selectedIds={selectedIds}
+                onSelectedIdsChange={setSelectedIds}
                 selectedRow={selectedRecipient}
                 onRowSelect={setSelectedRecipient}
               />
