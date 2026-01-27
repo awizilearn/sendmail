@@ -37,7 +37,7 @@ type DataTableProps = {
   onClear: () => void;
   headers: string[];
   selectedIds: Set<string>;
-  onSelectedIdsChange: (ids: Set<string> | ((current: Set<string>) => Set<string>)) => void;
+  onSelectedIdsChange: React.Dispatch<React.SetStateAction<Set<string>>>;
   selectedRow: MailRecipient | null;
   onRowSelect: (row: MailRecipient | null) => void;
 };

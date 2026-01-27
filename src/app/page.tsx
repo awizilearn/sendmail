@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { collection, query, where, writeBatch, getDocs, doc } from 'firebase/firestore';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { MailRecipient } from "@/types/mail-recipient";
@@ -9,7 +9,7 @@ import type { MailRecipient } from "@/types/mail-recipient";
 import ExcelImporter from "@/components/mail-pilot/ExcelImporter";
 import DataTable from "@/components/mail-pilot/DataTable";
 import EmailComposer from "@/components/mail-pilot/EmailComposer";
-import SmtpSettings from "@/components/mail-pilot/SmtpSettings";
+import EmailSender from "@/components/mail-pilot/EmailSender";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
@@ -36,15 +36,6 @@ Cordialement`);
   }, [user, firestore]);
 
   const { data: recipients, isLoading: isLoadingRecipients } = useCollection<MailRecipient>(recipientsQuery);
-  
-  useEffect(() => {
-    const newIdSet = recipients ? new Set(recipients.map(r => r.id).filter(Boolean)) : new Set<string>();
-
-    // Prevent infinite loop by comparing the sets before updating state
-    if (newIdSet.size !== selectedIds.size || ![...newIdSet].every(id => selectedIds.has(id))) {
-      setSelectedIds(newIdSet);
-    }
-  }, [recipients, selectedIds]);
 
   const headers = useMemo(() => {
       if (!recipients || recipients.length === 0) return [];
@@ -52,8 +43,9 @@ Cordialement`);
       return firstRecipientKeys.filter(key => key !== 'ownerId' && key !== 'id');
   }, [recipients]);
 
-  const recipientsForSmtp = useMemo(() => {
+  const recipientsForSending = useMemo(() => {
       if (!recipients) return [];
+      // Only include recipients that are selected
       return recipients.filter(r => selectedIds.has(r.id));
   }, [recipients, selectedIds]);
 
@@ -74,6 +66,7 @@ Cordialement`);
       await batch.commit();
       
       setSelectedRecipient(null);
+      setSelectedIds(new Set());
       if (showToast) toast({ title: "Données effacées", description: "La liste des destinataires a été vidée." });
     } catch (error) {
         console.error("Error clearing recipients: ", error);
@@ -87,25 +80,30 @@ Cordialement`);
       return;
     }
 
-    // First, clear existing recipients for this user
     await handleClearRecipients(false);
 
     const batch = writeBatch(firestore);
     const recipientsCollection = collection(firestore, 'recipients');
-    data.forEach(recipient => {
-      const { id, ...rest } = recipient;
-      const newDocRef = doc(recipientsCollection);
-      batch.set(newDocRef, { ...rest, ownerId: user.uid });
+    const newIds = new Set<string>();
+    
+    const processedData = data.map(recipient => {
+        const newDocRef = doc(recipientsCollection);
+        batch.set(newDocRef, { ...recipient, ownerId: user.uid });
+        newIds.add(newDocRef.id);
+        return { ...recipient, id: newDocRef.id };
     });
 
     try {
       await batch.commit();
+      // After successful import, select all by default by using the new document IDs
+      setSelectedIds(newIds);
       toast({ title: "Importation réussie", description: `${data.length} destinataires ont été enregistrés.` });
     } catch (error) {
       console.error("Error importing recipients: ", error);
       toast({ variant: "destructive", title: "Erreur d'importation", description: "Impossible d'enregistrer les destinataires." });
     }
   }, [user, firestore, toast, handleClearRecipients]);
+
 
   return (
     <DashboardLayout>
@@ -140,8 +138,8 @@ Cordialement`);
                   body={emailBody}
                   onBodyChange={setEmailBody}
                 />
-                <SmtpSettings 
-                  recipients={recipientsForSmtp}
+                <EmailSender 
+                  recipients={recipientsForSending}
                   emailBody={emailBody}
                   emailSubject={emailSubject}
                 />

@@ -12,7 +12,7 @@ import { Button } from '../ui/button';
 import { processExcelFile } from '@/lib/excel-processor';
 
 type ExcelImporterProps = {
-  onDataImported: (data: MailRecipient[]) => void;
+  onDataImported: (data: Omit<MailRecipient, 'id'>[]) => void;
 };
 
 export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {

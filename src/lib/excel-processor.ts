@@ -15,7 +15,7 @@ const addWorkingDays = (date: Date, days: number): Date => {
   return newDate;
 };
 
-export const processExcelFile = (file: File): Promise<MailRecipient[]> => {
+export const processExcelFile = (file: File): Promise<Omit<MailRecipient, 'id'>[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -47,12 +47,12 @@ export const processExcelFile = (file: File): Promise<MailRecipient[]> => {
         
         const defaultRdvDate = addWorkingDays(new Date(), 2);
         
-        const rowsToImport: MailRecipient[] = [];
+        const rowsToImport: Omit<MailRecipient, 'id'>[] = [];
 
-        jsonData.slice(1).forEach((rowArray, index) => {
+        jsonData.slice(1).forEach((rowArray) => {
             if (!rowArray || rowArray.length === 0) return; // Skip empty rows
 
-            const recipient: MailRecipient = { id: `local-recipient-${index}` };
+            const recipient: { [key: string]: string | number } = {};
             
             headers.forEach((header, cellIndex) => {
                 if (!header) return; // Skip empty headers
