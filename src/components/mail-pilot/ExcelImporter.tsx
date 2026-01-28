@@ -34,11 +34,13 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
     processExcelFile(file)
       .then(importedData => {
         onDataImported(importedData);
-        toast({
-          title: 'Succès',
-          description: `${importedData.length} enregistrements importés.`,
-          className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
-        });
+        if (importedData.length > 0) {
+          toast({
+            title: 'Succès',
+            description: `${importedData.length} enregistrements importés.`,
+            className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
+          });
+        }
       })
       .catch(error => {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -102,8 +104,8 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl">Importer les données</CardTitle>
-        <CardDescription>Étape 1 sur 4 : Téléchargez votre fichier Excel et vérifiez le mappage des données.</CardDescription>
+        <CardTitle className="text-2xl">Importer votre fichier</CardTitle>
+        <CardDescription>Téléchargez votre fichier Excel (.xlsx, .xls, .csv) contenant la liste des destinataires.</CardDescription>
       </CardHeader>
       <CardContent>
         <label 

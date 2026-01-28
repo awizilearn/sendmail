@@ -163,7 +163,7 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
       <CardHeader>
         <CardTitle className="text-2xl">Envoyer les e-mails</CardTitle>
         <CardDescription>
-            Étape 4 sur 4 : Envoyez l'e-mail composé aux destinataires sélectionnés.
+            Envoyez l'e-mail composé aux destinataires sélectionnés.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

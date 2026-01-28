@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from '../ui/badge';
 
 type DataTableProps = {
   recipients: MailRecipient[];
@@ -88,10 +89,13 @@ export default function DataTable({ recipients, isLoading, onClear, headers, sel
       <CardHeader>
         <div className="flex justify-between items-start">
             <div>
+              <div className="flex items-center gap-3">
                 <CardTitle className="text-2xl">Aperçu des données</CardTitle>
-                <div className="text-sm text-muted-foreground">
-                    Étape 2 sur 4 : Sélectionnez les destinataires pour l'envoi, puis cliquez sur une ligne pour prévisualiser l'e-mail. Total : {isLoading ? <Skeleton className="h-4 w-8 inline-block" /> : recipients.length}.
-                </div>
+                { !isLoading && <Badge variant="secondary">{recipients.length} destinataires</Badge> }
+              </div>
+              <CardDescription>
+                  Sélectionnez les destinataires pour l'envoi, puis cliquez sur une ligne pour prévisualiser l'e-mail.
+              </CardDescription>
             </div>
             <div className="flex gap-2">
                 <AlertDialog>

@@ -102,7 +102,7 @@ export default function EmailComposer({
       <CardHeader>
         <CardTitle className="text-2xl">Composer & Prévisualiser</CardTitle>
         <CardDescription>
-            Étape 3 sur 4 : Créez votre modèle d'e-mail. Utilisez des variables pour personnaliser chaque destinataire.
+            Créez votre modèle d'e-mail. Utilisez des variables pour personnaliser chaque destinataire.
         </CardDescription>
       </CardHeader>
       <CardContent>

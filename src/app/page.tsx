@@ -10,14 +10,17 @@ import ExcelImporter from "@/components/mail-pilot/ExcelImporter";
 import DataTable from "@/components/mail-pilot/DataTable";
 import EmailComposer from "@/components/mail-pilot/EmailComposer";
 import EmailSender from "@/components/mail-pilot/EmailSender";
+import UserGuide from "@/components/mail-pilot/UserGuide";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
-
+  
+  const [currentTab, setCurrentTab] = useState("import");
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
   const [selectedIds, setSelectedIds] = useState(new Set<string>());
   
@@ -39,13 +42,14 @@ Cordialement`);
 
   const headers = useMemo(() => {
       if (!recipients || recipients.length === 0) return [];
+      // Select the first recipient to determine headers, ensuring 'id' and 'ownerId' are excluded.
       const firstRecipientKeys = Object.keys(recipients[0]);
       return firstRecipientKeys.filter(key => key !== 'ownerId' && key !== 'id');
   }, [recipients]);
 
   const recipientsForSending = useMemo(() => {
       if (!recipients) return [];
-      // Only include recipients that are selected
+      // Filter recipients to include only those whose IDs are in the selectedIds set.
       return recipients.filter(r => selectedIds.has(r.id));
   }, [recipients, selectedIds]);
 
@@ -54,8 +58,8 @@ Cordialement`);
     
     try {
       const querySnapshot = await getDocs(recipientsQuery);
-      if (querySnapshot.empty) {
-        if (showToast) toast({ title: "Données effacées", description: "La liste des destinataires était déjà vide." });
+      if (querySnapshot.empty && showToast) {
+        toast({ title: "Données effacées", description: "La liste des destinataires était déjà vide." });
         return;
       }
 
@@ -67,6 +71,7 @@ Cordialement`);
       
       setSelectedRecipient(null);
       setSelectedIds(new Set());
+      setCurrentTab("import"); // Go back to import tab after clearing
       if (showToast) toast({ title: "Données effacées", description: "La liste des destinataires a été vidée." });
     } catch (error) {
         console.error("Error clearing recipients: ", error);
@@ -79,24 +84,28 @@ Cordialement`);
       toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
       return;
     }
-
+  
+    // Clear existing data before importing new data.
     await handleClearRecipients(false);
-
+  
+    if (data.length === 0) {
+      return; // Do nothing if the imported file is empty
+    }
+  
     const batch = writeBatch(firestore);
     const recipientsCollection = collection(firestore, 'recipients');
     const newIds = new Set<string>();
     
-    const processedData = data.map(recipient => {
-        const newDocRef = doc(recipientsCollection);
-        batch.set(newDocRef, { ...recipient, ownerId: user.uid });
-        newIds.add(newDocRef.id);
-        return { ...recipient, id: newDocRef.id };
+    data.forEach(recipient => {
+      const newDocRef = doc(recipientsCollection);
+      batch.set(newDocRef, { ...recipient, ownerId: user.uid });
+      newIds.add(newDocRef.id);
     });
-
+  
     try {
       await batch.commit();
-      // After successful import, select all by default by using the new document IDs
-      setSelectedIds(newIds);
+      setSelectedIds(newIds); // Auto-select all new recipients
+      setCurrentTab("send"); // Automatically switch to the next step
       toast({ title: "Importation réussie", description: `${data.length} destinataires ont été enregistrés.` });
     } catch (error) {
       console.error("Error importing recipients: ", error);
@@ -109,43 +118,51 @@ Cordialement`);
     <DashboardLayout>
         <header className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">Imports Excel</p>
-            <h1 className="text-3xl font-bold tracking-tight">Importer les données de rendez-vous</h1>
+            <p className="text-sm text-muted-foreground">Mail Pilot</p>
+            <h1 className="text-3xl font-bold tracking-tight">Envoyer des e-mails en masse</h1>
           </div>
         </header>
 
-        <div className="space-y-8">
-          <ExcelImporter onDataImported={handleDataImported} />
-          
-          <div className="space-y-8">
-              <DataTable 
-                recipients={recipients || []}
-                isLoading={isLoadingRecipients}
-                onClear={handleClearRecipients}
-                headers={headers}
-                selectedIds={selectedIds}
-                onSelectedIdsChange={setSelectedIds}
-                selectedRow={selectedRecipient}
-                onRowSelect={setSelectedRecipient}
-              />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                <EmailComposer 
-                  key={selectedRecipient ? selectedRecipient.id : 'empty'}
-                  selectedRecipient={selectedRecipient}
+        <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="import">Étape 1: Importer & Préparer</TabsTrigger>
+                <TabsTrigger value="send" disabled={!recipients || recipients.length === 0}>
+                    Étape 2: Composer & Envoyer
+                </TabsTrigger>
+            </TabsList>
+            <TabsContent value="import" className="mt-6 space-y-8">
+                <ExcelImporter onDataImported={handleDataImported} />
+                <UserGuide />
+            </TabsContent>
+            <TabsContent value="send" className="mt-6 space-y-8">
+                <DataTable 
+                  recipients={recipients || []}
+                  isLoading={isLoadingRecipients}
+                  onClear={handleClearRecipients}
                   headers={headers}
-                  subject={emailSubject}
-                  onSubjectChange={setEmailSubject}
-                  body={emailBody}
-                  onBodyChange={setEmailBody}
+                  selectedIds={selectedIds}
+                  onSelectedIdsChange={setSelectedIds}
+                  selectedRow={selectedRecipient}
+                  onRowSelect={setSelectedRecipient}
                 />
-                <EmailSender 
-                  recipients={recipientsForSending}
-                  emailBody={emailBody}
-                  emailSubject={emailSubject}
-                />
-              </div>
-          </div>
-        </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                  <EmailComposer 
+                    key={selectedRecipient ? selectedRecipient.id : 'empty'}
+                    selectedRecipient={selectedRecipient}
+                    headers={headers}
+                    subject={emailSubject}
+                    onSubjectChange={setEmailSubject}
+                    body={emailBody}
+                    onBodyChange={setEmailBody}
+                  />
+                  <EmailSender 
+                    recipients={recipientsForSending}
+                    emailBody={emailBody}
+                    emailSubject={emailSubject}
+                  />
+                </div>
+            </TabsContent>
+        </Tabs>
     </DashboardLayout>
   );
 }

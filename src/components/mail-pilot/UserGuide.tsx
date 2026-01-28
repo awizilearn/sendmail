@@ -16,7 +16,7 @@ export default function UserGuide() {
                 </AccordionTrigger>
                 <AccordionContent className="prose prose-sm dark:prose-invert max-w-none pl-12">
                     <p>
-                        Bienvenue sur NS CONSEIL ! Cette application est conçue pour simplifier l'envoi d'e-mails personnalisés à partir d'une liste de destinataires fournie dans un fichier Excel.
+                        Bienvenue sur Training Center Pro ! Cette application est conçue pour simplifier l'envoi d'e-mails personnalisés à partir d'une liste de destinataires fournie dans un fichier Excel.
                     </p>
                     <p>
                         <strong>Fonctionnalités clés :</strong>
@@ -41,26 +41,20 @@ export default function UserGuide() {
                     <div>
                         <h4><FileUp className="inline-block w-5 h-5 mr-2"/>Étape 1 : Importer les Données</h4>
                         <p>
-                            Cliquez sur la zone de téléchargement ou glissez-déposez votre fichier Excel. Assurez-vous que votre fichier contient une ligne d'en-tête et au moins une colonne nommée `adresse mail`. Pour la personnalisation `formateur/formatrice`, incluez une colonne `Civilité Formateur` avec les valeurs `M.` ou `Mme`.
+                            Cliquez sur la zone de téléchargement ou glissez-déposez votre fichier Excel. Assurez-vous que votre fichier contient une ligne d'en-tête et au moins une colonne nommée `adresse mail`. Pour la personnalisation `formateur/formatrice`, incluez une colonne `Civilité Formateur` avec les valeurs `M.` ou `Mme`. Une fois l'import réussi, l'application vous mènera à l'étape suivante.
                         </p>
                     </div>
                     <div>
-                        <h4><CheckCircle2 className="inline-block w-5 h-5 mr-2"/>Étape 2 : Vérifier les Données</h4>
+                        <h4><PencilRuler className="inline-block w-5 h-5 mr-2"/>Étape 2 : Composer et Envoyer</h4>
                         <p>
-                            Une fois les données importées, elles apparaîtront dans un tableau. Cliquez sur une ligne pour sélectionner un destinataire. Cela mettra à jour l'aperçu de l'e-mail avec les informations de cette personne. Vous pouvez également exporter les données nettoyées si nécessaire.
+                           Sur cet écran, vous pouvez :
                         </p>
-                    </div>
-                    <div>
-                        <h4><PencilRuler className="inline-block w-5 h-5 mr-2"/>Étape 3 : Composer l'E-mail</h4>
-                        <p>
-                            Rédigez le sujet et le corps de votre e-mail. Utilisez le menu déroulant "Insérer une variable" pour ajouter des champs de votre fichier Excel dans votre modèle. Par exemple, si vous insérez <code>{'{{Bénéficiare}}'}</code>, il sera remplacé par le nom du destinataire. L'aperçu ci-dessous se met à jour en temps réel.
-                        </p>
-                    </div>
-                    <div>
-                        <h4><Send className="inline-block w-5 h-5 mr-2"/>Étape 4 : Configurer et Envoyer</h4>
-                        <p>
-                            Remplissez vos informations de serveur SMTP (hôte, port, nom d'utilisateur et mot de passe). Vous pouvez sauvegarder ces paramètres localement pour une utilisation future. Envoyez un e-mail de test pour vérifier votre configuration. Lorsque vous êtes prêt, cliquez sur "Envoyer" pour démarrer l'envoi à tous les destinataires de votre liste.
-                        </p>
+                        <ul>
+                            <li><strong>Sélectionner des destinataires :</strong> Cochez les cases pour choisir qui recevra l'e-mail.</li>
+                            <li><strong>Prévisualiser :</strong> Cliquez sur une ligne pour voir un aperçu de l'e-mail personnalisé pour ce destinataire.</li>
+                            <li><strong>Composer l'e-mail :</strong> Rédigez le sujet et le corps de votre e-mail. Utilisez le menu déroulant "Insérer une variable" pour ajouter des champs de votre fichier Excel.</li>
+                             <li><strong>Configurer & Envoyer :</strong> Assurez-vous que vos informations SMTP sont correctes dans l'onglet "Paramètres". Ensuite, cliquez sur "Envoyer" pour démarrer l'envoi.</li>
+                        </ul>
                     </div>
                 </AccordionContent>
             </AccordionItem>
