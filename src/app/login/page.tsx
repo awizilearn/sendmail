@@ -7,7 +7,6 @@ import { useAuth, useUser } from '@/firebase';
 import { initiateAnonymousSignIn, initiateGoogleSignIn } from '@/firebase/non-blocking-login';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Header from '@/components/mail-pilot/Header';
 import { Separator } from '@/components/ui/separator';
 import { EmailLoginForm } from '@/components/auth/EmailLoginForm';
 
@@ -20,6 +19,15 @@ const GoogleIcon = (props: React.ComponentProps<'svg'>) => (
   </svg>
 );
 
+const NsConseilLogo = () => (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1.5" y="1.5" width="29" height="29" rx="4" fill="hsl(var(--primary))"/>
+        <g transform="translate(0 -2)">
+            <path d="M16 4L26 16L16 28L6 16L16 4Z" stroke="hsl(var(--primary-foreground))" strokeWidth="2"/>
+            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="hsl(var(--primary))">NS</text>
+        </g>
+    </svg>
+);
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -54,51 +62,52 @@ export default function LoginPage() {
 
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <Header />
-      <main className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle>Connexion</CardTitle>
-            <CardDescription>
-              Choisissez une méthode pour vous connecter.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <Button variant="outline" onClick={handleGoogleSignIn} disabled={isUserLoading} className="w-full">
-              <GoogleIcon className="mr-2 h-5 w-5"/>
-              Continuer avec Google
+    <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
+      <div className="flex items-center gap-3 mb-8">
+          <NsConseilLogo />
+          <h1 className="text-3xl font-bold text-primary">NS CONSEIL</h1>
+      </div>
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Connexion</CardTitle>
+          <CardDescription>
+            Choisissez une méthode pour vous connecter.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <Button variant="outline" onClick={handleGoogleSignIn} disabled={isUserLoading} className="w-full">
+            <GoogleIcon className="mr-2 h-5 w-5"/>
+            Continuer avec Google
+          </Button>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                OU CONTINUER AVEC
+              </span>
+            </div>
+          </div>
+
+          <EmailLoginForm />
+
+          <Separator />
+
+          <div className="grid gap-2">
+            <p className="px-2 text-center text-sm text-muted-foreground">
+                Nouveau sur NS Conseil ?{" "}
+                <Link href="/signup" className="underline underline-offset-4 hover:text-primary">
+                  S'inscrire
+                </Link>
+            </p>
+
+            <Button variant="link" onClick={handleAnonymousSignIn} className="w-full" disabled={isUserLoading}>
+              Continuer en tant qu'invité
             </Button>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  OU CONTINUER AVEC
-                </span>
-              </div>
-            </div>
-
-            <EmailLoginForm />
-
-            <Separator />
-
-            <div className="grid gap-2">
-              <p className="px-2 text-center text-sm text-muted-foreground">
-                  Nouveau sur NS Conseil ?{" "}
-                  <Link href="/signup" className="underline underline-offset-4 hover:text-primary">
-                    S'inscrire
-                  </Link>
-              </p>
-
-              <Button variant="link" onClick={handleAnonymousSignIn} className="w-full" disabled={isUserLoading}>
-                Continuer en tant qu'invité
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+          </div>
+        </CardContent>
+      </Card>
+    </main>
   );
 }

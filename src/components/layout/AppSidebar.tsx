@@ -17,7 +17,7 @@ const NsConseilLogo = () => (
         <rect x="1.5" y="1.5" width="29" height="29" rx="4" fill="hsl(var(--primary))"/>
         <g transform="translate(0 -2)">
             <path d="M16 4L26 16L16 28L6 16L16 4Z" stroke="hsl(var(--primary-foreground))" strokeWidth="2"/>
-            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="hsl(var(--primary))">TCP</text>
+            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="hsl(var(--primary))">NS</text>
         </g>
     </svg>
 );
@@ -64,12 +64,9 @@ export default function AppSidebar() {
         <aside className="hidden w-64 flex-col border-r bg-white p-4 sm:flex">
             <div className="flex items-center gap-3 mb-8">
                 <NsConseilLogo />
-                <div className="flex flex-col">
-                    <h1 className="text-lg font-bold text-primary">
-                        Training Center Pro
-                    </h1>
-                    <p className="text-xs text-muted-foreground">Automation Suite</p>
-                </div>
+                <h1 className="text-xl font-bold text-primary">
+                    NS CONSEIL
+                </h1>
             </div>
             <nav className="flex flex-col gap-2">
                 {navLinks.map(link => (
