@@ -11,18 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { usePathname } from 'next/navigation';
-
-const NsConseilLogo = () => (
-    <svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="120" height="32" rx="4" fill="hsl(222.2 84% 4.9%)"/>
-        <text x="10" y="21" fontFamily="Inter, sans-serif" fontSize="16" fontWeight="bold" fill="hsl(var(--foreground))">
-          NS
-        </text>
-        <text x="38" y="21" fontFamily="Inter, sans-serif" fontSize="16" fontWeight="bold" fill="hsl(var(--primary))">
-          CONSEIL
-        </text>
-    </svg>
-);
+import AppLogo from '../common/AppLogo';
 
 const NavLink = ({ href, children, active = false }: { href: string; children: React.ReactNode; active?: boolean }) => (
   <Link
@@ -64,11 +53,8 @@ export default function AppSidebar() {
 
     return (
         <aside className="hidden w-64 flex-col border-r bg-background p-4 sm:flex">
-            <div className="flex items-center gap-3 mb-8">
-                <NsConseilLogo />
-                <h1 className="text-xl font-bold text-primary">
-                    NS CONSEIL
-                </h1>
+            <div className="mb-8">
+                <AppLogo />
             </div>
             <nav className="flex flex-col gap-2">
                 {navLinks.map(link => (

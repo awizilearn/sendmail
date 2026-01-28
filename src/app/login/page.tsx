@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { EmailLoginForm } from '@/components/auth/EmailLoginForm';
+import AppLogo from '@/components/common/AppLogo';
 
 const GoogleIcon = (props: React.ComponentProps<'svg'>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
@@ -17,18 +18,6 @@ const GoogleIcon = (props: React.ComponentProps<'svg'>) => (
     <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
     <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.99,35.536,44,29.891,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
   </svg>
-);
-
-const NsConseilLogo = () => (
-    <svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="120" height="32" rx="4" fill="hsl(222.2 84% 4.9%)"/>
-        <text x="10" y="21" fontFamily="Inter, sans-serif" fontSize="16" fontWeight="bold" fill="hsl(var(--foreground))">
-          NS
-        </text>
-        <text x="38" y="21" fontFamily="Inter, sans-serif" fontSize="16" fontWeight="bold" fill="hsl(var(--primary))">
-          CONSEIL
-        </text>
-    </svg>
 );
 
 export default function LoginPage() {
@@ -65,9 +54,8 @@ export default function LoginPage() {
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
-      <div className="flex items-center gap-3 mb-8">
-          <NsConseilLogo />
-          <h1 className="text-3xl font-bold text-primary">NS CONSEIL</h1>
+      <div className="mb-8">
+          <AppLogo />
       </div>
       <Card className="w-full max-w-sm">
         <CardHeader>

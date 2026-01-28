@@ -6,18 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmailSignUpForm } from '@/components/auth/EmailSignUpForm';
-
-const NsConseilLogo = () => (
-    <svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="120" height="32" rx="4" fill="hsl(222.2 84% 4.9%)"/>
-        <text x="10" y="21" fontFamily="Inter, sans-serif" fontSize="16" fontWeight="bold" fill="hsl(var(--foreground))">
-          NS
-        </text>
-        <text x="38" y="21" fontFamily="Inter, sans-serif" fontSize="16" fontWeight="bold" fill="hsl(var(--primary))">
-          CONSEIL
-        </text>
-    </svg>
-);
+import AppLogo from '@/components/common/AppLogo';
 
 
 export default function SignUpPage() {
@@ -40,9 +29,8 @@ export default function SignUpPage() {
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
-      <div className="flex items-center gap-3 mb-8">
-          <NsConseilLogo />
-          <h1 className="text-3xl font-bold text-primary">NS CONSEIL</h1>
+      <div className="mb-8">
+          <AppLogo />
       </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
