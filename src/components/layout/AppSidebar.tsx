@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { signOut } from "firebase/auth";
 import { useUser, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, LogOut, LayoutDashboard, Settings } from "lucide-react";
+import { Upload, LogOut, Settings } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,6 @@ const NavLink = ({ href, children, active = false }: { href: string; children: R
 );
 
 const navLinks = [
-    { href: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
     { href: "/", icon: Upload, label: "Imports Excel" },
     { href: "/settings", icon: Settings, label: "Paramètres E-mail" },
 ];
