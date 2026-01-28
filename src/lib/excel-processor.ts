@@ -2,19 +2,6 @@
 import * as XLSX from 'xlsx';
 import type { MailRecipient } from '@/types/mail-recipient';
 
-const addWorkingDays = (date: Date, days: number): Date => {
-  const newDate = new Date(date);
-  let added = 0;
-  while (added < days) {
-    newDate.setDate(newDate.getDate() + 1);
-    const dayOfWeek = newDate.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Sunday, 6 = Saturday
-      added++;
-    }
-  }
-  return newDate;
-};
-
 export const processExcelFile = (file: File): Promise<Omit<MailRecipient, 'id'>[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -43,9 +30,6 @@ export const processExcelFile = (file: File): Promise<Omit<MailRecipient, 'id'>[
         }
 
         const civilityTrainerKey = headers.find(h => h.toLowerCase() === 'civilité formateur');
-        const rdvDateKey = headers.find(h => h.toLowerCase() === 'date du rdv');
-        
-        const defaultRdvDate = addWorkingDays(new Date(), 2);
         
         const rowsToImport: Omit<MailRecipient, 'id'>[] = [];
 
@@ -78,10 +62,6 @@ export const processExcelFile = (file: File): Promise<Omit<MailRecipient, 'id'>[
 
             if (!civilityTrainerKey) {
                 recipient['Civilité Formateur'] = 'M.';
-            }
-            
-            if (!rdvDateKey || !recipient[rdvDateKey]) {
-              recipient['Date du RDV'] = defaultRdvDate.toLocaleDateString('fr-FR');
             }
             
             const emailValue = recipient[emailColumnKey] ? String(recipient[emailColumnKey]).trim() : '';
