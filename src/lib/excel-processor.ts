@@ -48,13 +48,6 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
                 const cell = (rowArray as any[])[cellIndex];
 
                 if (cell instanceof Date) {
-                    // Use UTC methods to get the date components. This avoids timezone shifts
-                    // where the date might jump back a day depending on the server's timezone.
-                    const utcYear = cell.getUTCFullYear();
-                    const utcMonth = cell.getUTCMonth();
-                    const utcDay = cell.getUTCDate();
-                    const utcDate = new Date(Date.UTC(utcYear, utcMonth, utcDay));
-
                     const lowerHeader = header.toLowerCase();
                     if (lowerHeader.includes('heure') || lowerHeader === 'fin rdv') {
                         recipient[header] = cell.toLocaleTimeString('fr-FR', {
@@ -62,7 +55,18 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
                             minute: '2-digit'
                         });
                     } else {
-                        recipient[header] = utcDate.toLocaleDateString('fr-FR', { timeZone: 'UTC' });
+                        // Robust date handling to prevent timezone shifts.
+                        // The Date object from 'xlsx' is created in the server's local timezone.
+                        // We must extract the date parts using that same local timezone.
+                        const year = cell.getFullYear();
+                        const month = cell.getMonth() + 1; // getMonth() is 0-indexed
+                        const day = cell.getDate();
+
+                        // Manually construct the DD/MM/YYYY string to avoid any further timezone conversions.
+                        const dayString = String(day).padStart(2, '0');
+                        const monthString = String(month).padStart(2, '0');
+                        
+                        recipient[header] = `${dayString}/${monthString}/${year}`;
                     }
                 } else {
                     recipient[header] = cell ?? '';
