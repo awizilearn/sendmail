@@ -73,6 +73,11 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
 
     const deliveryLogsRef = collection(firestore, 'delivery-logs');
 
+    // Fetch all existing logs for the user once to avoid N+1 queries.
+    const logsQuery = query(deliveryLogsRef, where('ownerId', '==', user.uid));
+    const existingLogsSnapshot = await getDocs(logsQuery);
+    const existingEmailKeys = new Set(existingLogsSnapshot.docs.map(doc => doc.data().emailKey));
+
     for (let i = 0; i < recipients.length; i++) {
         const recipient = recipients[i];
         const recipientEmail = String(recipient['adresse mail']);
@@ -84,10 +89,8 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
 
         const emailKey = `${recipientEmail}_${String(recipient['Date du RDV'])}`;
 
-        const q = query(deliveryLogsRef, where('ownerId', '==', user.uid), where('emailKey', '==', emailKey));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
+        // Check against the in-memory Set instead of querying Firestore.
+        if (existingEmailKeys.has(emailKey)) {
             setSkippedCount(prev => prev + 1);
         } else {
             const personalizedSubject = replacePlaceholders(emailSubject, recipient);

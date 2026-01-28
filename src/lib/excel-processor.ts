@@ -23,23 +23,22 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
           defval: "",
         });
 
-        if (jsonData.length < 2) {
-          throw new Error("Le fichier Excel doit comporter une ligne d'en-tête et au moins une ligne de données.");
+        if (jsonData.length < 1) {
+          resolve({ data: [], headers: [] });
+          return;
         }
 
         const headers = (jsonData[0] as string[]).map(h => h ? String(h).trim() : '');
         
         const emailColumnKey = headers.find(h => h.toLowerCase() === 'adresse mail');
-        if (!emailColumnKey) {
+        if (!emailColumnKey && jsonData.length > 1) { // Only require email if there's data
             throw new Error("La colonne requise 'adresse mail' n'a pas été trouvée dans le fichier.");
         }
-
-        const civilityTrainerKey = headers.find(h => h.toLowerCase() === 'civilité formateur');
         
         const rowsToImport: Omit<MailRecipient, 'id'>[] = [];
 
         jsonData.slice(1).forEach((rowArray) => {
-            if (!rowArray || rowArray.length === 0) return; // Skip empty rows
+            if (!rowArray || rowArray.length === 0 || rowArray.every(cell => cell === '')) return; // Skip empty/blank rows
 
             const recipient: { [key: string]: string | number } = {};
             
@@ -55,14 +54,12 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
                             minute: '2-digit'
                         });
                     } else {
-                        // Robust date handling to prevent timezone shifts.
-                        // The Date object from 'xlsx' is created in the server's local timezone.
-                        // We must extract the date parts using that same local timezone.
-                        const year = cell.getFullYear();
-                        const month = cell.getMonth() + 1; // getMonth() is 0-indexed
-                        const day = cell.getDate();
+                        // The 'xlsx' library parses dates as UTC. We must read them as UTC to avoid timezone shifts.
+                        const year = cell.getUTCFullYear();
+                        const month = cell.getUTCMonth() + 1; // getUTCMonth() is 0-indexed
+                        const day = cell.getUTCDate();
 
-                        // Manually construct the DD/MM/YYYY string to avoid any further timezone conversions.
+                        // Manually construct the DD/MM/YYYY string.
                         const dayString = String(day).padStart(2, '0');
                         const monthString = String(month).padStart(2, '0');
                         
@@ -72,12 +69,8 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
                     recipient[header] = cell ?? '';
                 }
             });
-
-            if (!civilityTrainerKey) {
-                recipient['Civilité Formateur'] = 'M.';
-            }
             
-            const emailValue = recipient[emailColumnKey] ? String(recipient[emailColumnKey]).trim() : '';
+            const emailValue = emailColumnKey ? String(recipient[emailColumnKey]).trim() : '';
             if (emailValue) {
               rowsToImport.push(recipient);
             }
