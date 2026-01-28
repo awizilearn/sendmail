@@ -20,12 +20,14 @@ const GoogleIcon = (props: React.ComponentProps<'svg'>) => (
 );
 
 const NsConseilLogo = () => (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1.5" y="1.5" width="29" height="29" rx="4" fill="hsl(var(--primary))"/>
-        <g transform="translate(0 -2)">
-            <path d="M16 4L26 16L16 28L6 16L16 4Z" stroke="hsl(var(--primary-foreground))" strokeWidth="2"/>
-            <text x="16" y="18.5" textAnchor="middle" dy=".3em" fontSize="11" fontWeight="bold" fill="hsl(var(--primary))">NS</text>
-        </g>
+    <svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="120" height="32" rx="4" fill="hsl(222.2 84% 4.9%)"/>
+        <text x="10" y="21" fontFamily="Inter, sans-serif" fontSize="16" fontWeight="bold" fill="hsl(var(--foreground))">
+          NS
+        </text>
+        <text x="38" y="21" fontFamily="Inter, sans-serif" fontSize="16" fontWeight="bold" fill="hsl(var(--primary))">
+          CONSEIL
+        </text>
     </svg>
 );
 
