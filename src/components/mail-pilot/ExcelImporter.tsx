@@ -6,13 +6,12 @@ import { UploadCloud, FileCheck2, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import type { MailRecipient } from '@/types/mail-recipient';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
-import { processExcelFile } from '@/lib/excel-processor';
+import { processExcelFile, type ProcessedExcelData } from '@/lib/excel-processor';
 
 type ExcelImporterProps = {
-  onDataImported: (data: Omit<MailRecipient, 'id'>[]) => void;
+  onDataImported: (result: ProcessedExcelData) => void;
 };
 
 export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
@@ -32,12 +31,12 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
     setFileName(file.name);
 
     processExcelFile(file)
-      .then(importedData => {
-        onDataImported(importedData);
-        if (importedData.length > 0) {
+      .then(processedResult => {
+        onDataImported(processedResult);
+        if (processedResult.data.length > 0) {
           toast({
             title: 'Succès',
-            description: `${importedData.length} enregistrements importés.`,
+            description: `${processedResult.data.length} enregistrements importés.`,
             className: 'bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600'
           });
         }
@@ -91,7 +90,7 @@ export default function ExcelImporter({ onDataImported }: ExcelImporterProps) {
     e.preventDefault();
     e.stopPropagation();
     setFileName('');
-    onDataImported([]);
+    onDataImported({ data: [], headers: [] });
     if (fileInputRef.current) {
         fileInputRef.current.value = '';
     }

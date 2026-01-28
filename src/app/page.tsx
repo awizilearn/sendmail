@@ -5,6 +5,7 @@ import { useState, useMemo, useCallback } from "react";
 import { collection, query, where, writeBatch, getDocs, doc } from 'firebase/firestore';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { MailRecipient } from "@/types/mail-recipient";
+import type { ProcessedExcelData } from "@/lib/excel-processor";
 
 import ExcelImporter from "@/components/mail-pilot/ExcelImporter";
 import DataTable from "@/components/mail-pilot/DataTable";
@@ -23,6 +24,7 @@ export default function Home() {
   const [currentTab, setCurrentTab] = useState("import");
   const [selectedRecipient, setSelectedRecipient] = useState<MailRecipient | null>(null);
   const [selectedIds, setSelectedIds] = useState(new Set<string>());
+  const [headers, setHeaders] = useState<string[]>([]);
   
   const [emailSubject, setEmailSubject] = useState(`Confirmation de votre rendez-vous avec {{Formateur/Formatrice}} votre {{formateur/formatrice}} {{PLATEFORME}}`);
   const [emailBody, setEmailBody] = useState(`Bonjour {{Civilité}} {{Bénéficiare}},
@@ -39,13 +41,6 @@ Cordialement`);
   }, [user, firestore]);
 
   const { data: recipients, isLoading: isLoadingRecipients } = useCollection<MailRecipient>(recipientsQuery);
-
-  const headers = useMemo(() => {
-      if (!recipients || recipients.length === 0) return [];
-      // Select the first recipient to determine headers, ensuring 'id' and 'ownerId' are excluded.
-      const firstRecipientKeys = Object.keys(recipients[0]);
-      return firstRecipientKeys.filter(key => key !== 'ownerId' && key !== 'id');
-  }, [recipients]);
 
   const recipientsForSending = useMemo(() => {
       if (!recipients) return [];
@@ -71,6 +66,7 @@ Cordialement`);
       
       setSelectedRecipient(null);
       setSelectedIds(new Set());
+      setHeaders([]); // Clear headers
       setCurrentTab("import"); // Go back to import tab after clearing
       if (showToast) toast({ title: "Données effacées", description: "La liste des destinataires a été vidée." });
     } catch (error) {
@@ -79,7 +75,8 @@ Cordialement`);
     }
   }, [recipientsQuery, firestore, toast]);
 
-  const handleDataImported = useCallback(async (data: MailRecipient[]) => {
+  const handleDataImported = useCallback(async (result: ProcessedExcelData) => {
+    const { data, headers: importedHeaders } = result;
     if (!user || !firestore) {
       toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
       return;
@@ -89,9 +86,11 @@ Cordialement`);
     await handleClearRecipients(false);
   
     if (data.length === 0) {
-      return; // Do nothing if the imported file is empty
+      return; // Do nothing if the imported file is empty or it was a reset
     }
   
+    setHeaders(importedHeaders);
+
     const batch = writeBatch(firestore);
     const recipientsCollection = collection(firestore, 'recipients');
     const newIds = new Set<string>();

@@ -2,7 +2,12 @@
 import * as XLSX from 'xlsx';
 import type { MailRecipient } from '@/types/mail-recipient';
 
-export const processExcelFile = (file: File): Promise<Omit<MailRecipient, 'id'>[]> => {
+export type ProcessedExcelData = {
+  data: Omit<MailRecipient, 'id'>[];
+  headers: string[];
+};
+
+export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -43,6 +48,13 @@ export const processExcelFile = (file: File): Promise<Omit<MailRecipient, 'id'>[
                 const cell = (rowArray as any[])[cellIndex];
 
                 if (cell instanceof Date) {
+                    // Use UTC methods to get the date components. This avoids timezone shifts
+                    // where the date might jump back a day depending on the server's timezone.
+                    const utcYear = cell.getUTCFullYear();
+                    const utcMonth = cell.getUTCMonth();
+                    const utcDay = cell.getUTCDate();
+                    const utcDate = new Date(Date.UTC(utcYear, utcMonth, utcDay));
+
                     const lowerHeader = header.toLowerCase();
                     if (lowerHeader.includes('heure') || lowerHeader === 'fin rdv') {
                         recipient[header] = cell.toLocaleTimeString('fr-FR', {
@@ -50,9 +62,6 @@ export const processExcelFile = (file: File): Promise<Omit<MailRecipient, 'id'>[
                             minute: '2-digit'
                         });
                     } else {
-                        // Use UTC methods to get the date components. This avoids timezone shifts
-                        // where the date might jump back a day depending on the server's timezone.
-                        const utcDate = new Date(Date.UTC(cell.getUTCFullYear(), cell.getUTCMonth(), cell.getUTCDate()));
                         recipient[header] = utcDate.toLocaleDateString('fr-FR', { timeZone: 'UTC' });
                     }
                 } else {
@@ -70,7 +79,7 @@ export const processExcelFile = (file: File): Promise<Omit<MailRecipient, 'id'>[
             }
         });
         
-        resolve(rowsToImport);
+        resolve({ data: rowsToImport, headers });
 
       } catch (error) {
         reject(error);
