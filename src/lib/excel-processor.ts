@@ -66,9 +66,9 @@ export const processExcelFile = (file: File): Promise<Omit<MailRecipient, 'id'>[
                             minute: '2-digit'
                         });
                     } else {
-                        // Create a new date in UTC using the parts of the excel-provided date.
+                        // Create a new date in UTC using the local parts of the parsed date.
                         // This avoids timezone conversion issues where the date could shift by a day.
-                        const utcDate = new Date(Date.UTC(cell.getUTCFullYear(), cell.getUTCMonth(), cell.getUTCDate()));
+                        const utcDate = new Date(Date.UTC(cell.getFullYear(), cell.getMonth(), cell.getDate()));
                         recipient[header] = utcDate.toLocaleDateString('fr-FR', { timeZone: 'UTC' });
                     }
                 } else {
