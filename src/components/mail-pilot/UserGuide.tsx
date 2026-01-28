@@ -11,12 +11,12 @@ export default function UserGuide() {
                 <AccordionTrigger>
                     <div className="flex items-center gap-3">
                         <BookUser className="w-6 h-6 text-primary" />
-                        <h2 className="text-xl font-semibold">Manuel d'utilisation</h2>
+                        <h2 className="text-xl font-semibold">Manuel d'utilisation - envoi mail J-4</h2>
                     </div>
                 </AccordionTrigger>
                 <AccordionContent className="prose prose-sm dark:prose-invert max-w-none pl-12">
                     <p>
-                        Bienvenue sur Training Center Pro ! Cette application est conçue pour simplifier l'envoi d'e-mails personnalisés à partir d'une liste de destinataires fournie dans un fichier Excel.
+                        Bienvenue sur envoi mail J-4 ! Cette application est conçue pour simplifier l'envoi d'e-mails personnalisés à partir d'une liste de destinataires fournie dans un fichier Excel.
                     </p>
                     <p>
                         <strong>Fonctionnalités clés :</strong>

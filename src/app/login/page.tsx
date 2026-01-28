@@ -86,7 +86,7 @@ export default function LoginPage() {
 
           <div className="grid gap-2">
             <p className="px-2 text-center text-sm text-muted-foreground">
-                Nouveau sur NS Conseil ?{" "}
+                Nouveau sur envoi mail J-4 ?{" "}
                 <Link href="/signup" className="underline underline-offset-4 hover:text-primary">
                   S'inscrire
                 </Link>

@@ -50,7 +50,7 @@ export async function sendTestEmail(smtpConfig: SmtpConfig): Promise<{ success: 
     await transporter.sendMail({
       from: user,
       to: user, // Send to self
-      subject: 'Training Center Pro - Test de Connexion',
+      subject: 'envoi mail J-4 - Test de Connexion',
       text: 'Votre connexion SMTP est configurée correctement.',
       html: '<b>Votre connexion SMTP est configurée correctement.</b>',
     });

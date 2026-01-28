@@ -31,8 +31,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       <AppSidebar />
-      <main className="flex-1 p-4 md:p-8 space-y-8 overflow-auto">
-        {children}
+      <main className="flex flex-1 flex-col p-4 md:p-8 space-y-8 overflow-auto">
+        <div className="flex-grow">
+          {children}
+        </div>
+        <footer className="text-center text-sm text-muted-foreground py-4 border-t">
+          Copyright © 2025 | <a href="https://mbl-service.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">mbl-service.com</a>
+        </footer>
       </main>
     </div>
   );

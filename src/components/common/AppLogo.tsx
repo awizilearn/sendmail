@@ -5,7 +5,7 @@ const AppLogo = () => {
     <div className="flex items-center" style={{ height: '32px' }}>
       <Image
         src="/images/logo.png"
-        alt="NS CONSEIL Logo"
+        alt="envoi mail J-4 Logo"
         width={150}
         height={32}
         priority

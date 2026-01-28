@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'NS CONSEIL',
+  title: 'envoi mail J-4',
   description: 'Importez des données Excel, composez et envoyez des e-mails personnalisés sans effort.',
 };
 

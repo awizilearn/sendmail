@@ -69,11 +69,11 @@ export default function AppSidebar() {
                         <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9">
                                 <AvatarImage src={user.photoURL || "#"} alt="Avatar" />
-                                <AvatarFallback>{getInitials(user.email, user.displayName || "Compte Admin")}</AvatarFallback>
+                                <AvatarFallback>{getInitials(user.email, user.displayName || "envoi mail J-4")}</AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col items-start text-left">
                                 <p className="text-sm font-medium leading-none">
-                                Compte Admin
+                                envoi mail J-4
                                 </p>
                                 <p className="text-xs leading-none text-muted-foreground">
                                   Forfait Pro

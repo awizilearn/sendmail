@@ -118,7 +118,7 @@ Cordialement`);
     <DashboardLayout>
         <header className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">Mail Pilot</p>
+            <p className="text-sm text-muted-foreground">envoi mail J-4</p>
             <h1 className="text-3xl font-bold tracking-tight">Envoyer des e-mails en masse</h1>
           </div>
         </header>
