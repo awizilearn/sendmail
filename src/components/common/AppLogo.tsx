@@ -1,14 +1,10 @@
-import Image from 'next/image';
 
 const AppLogo = () => {
   return (
-    <Image
-      src="/images/logo.png"
-      alt="NS Conseil Logo"
-      width={120}
-      height={32}
-      priority
-    />
+    <div className="flex items-center" style={{ height: '32px' }}>
+      <span className="text-2xl font-bold text-primary">NS</span>
+      <span className="text-2xl font-semibold text-foreground">CONSEIL</span>
+    </div>
   );
 };
 
