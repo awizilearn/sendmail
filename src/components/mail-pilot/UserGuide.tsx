@@ -2,7 +2,7 @@
 "use client";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { BookUser, Footprints, FileUp, CheckCircle2, PencilRuler, Send } from "lucide-react";
+import { BookUser, Footprints, FileUp, PencilRuler, History } from "lucide-react";
 
 export default function UserGuide() {
     return (
@@ -24,9 +24,11 @@ export default function UserGuide() {
                     <ul>
                         <li><strong>Importation de données :</strong> Importez facilement des fichiers .xlsx, .xls ou .csv contenant les informations de vos destinataires.</li>
                         <li><strong>Personnalisation d'e-mails :</strong> Utilisez des variables (par exemple, <code>{'{{Bénéficiare}}'}</code>) dans l'objet et le corps de votre e-mail pour insérer dynamiquement des données provenant de votre fichier.</li>
+                        <li><strong>Génération de contenu par IA :</strong> Profitez de l'intelligence artificielle pour générer des paragraphes de message personnalisés en un seul clic.</li>
                         <li><strong>Prévisualisation en direct :</strong> Sélectionnez un destinataire pour voir instantanément à quoi ressemblera son e-mail personnalisé.</li>
-                        <li><strong>Configuration SMTP :</strong> Configurez vos propres paramètres de serveur SMTP pour envoyer des e-mails directement depuis l'application.</li>
-                        <li><strong>Prévention des doublons :</strong> Le système se souvient des e-mails déjà envoyés pour un rendez-vous donné, évitant ainsi les envois multiples.</li>
+                        <li><strong>Configuration SMTP sécurisée :</strong> Configurez vos propres paramètres de serveur SMTP. Le mot de passe peut être sauvegardé de manière sécurisée ou demandé à chaque envoi pour plus de flexibilité.</li>
+                        <li><strong>Historique d'envoi :</strong> Accédez à un journal complet de tous les e-mails envoyés, avec leur statut (envoyé ou échoué), via l'onglet "Historique".</li>
+                        <li><strong>Prévention des doublons et renvoi :</strong> Le système détecte les e-mails déjà envoyés pour un même rendez-vous. Avant l'envoi, un résumé vous est présenté avec une option pour confirmer et forcer le renvoi si nécessaire.</li>
                     </ul>
                 </AccordionContent>
             </AccordionItem>
@@ -41,7 +43,7 @@ export default function UserGuide() {
                     <div>
                         <h4><FileUp className="inline-block w-5 h-5 mr-2"/>Étape 1 : Importer les Données</h4>
                         <p>
-                            Cliquez sur la zone de téléchargement ou glissez-déposez votre fichier Excel. Assurez-vous que votre fichier contient une ligne d'en-tête et au moins une colonne nommée `adresse mail`. Pour la personnalisation `formateur/formatrice`, incluez une colonne `Civilité Formateur` avec les valeurs `M.` ou `Mme`. Une fois l'import réussi, l'application vous mènera à l'étape suivante.
+                            Cliquez sur la zone de téléchargement ou glissez-déposez votre fichier Excel. L'application préserve l'ordre original de vos colonnes. Assurez-vous que votre fichier contient une ligne d'en-tête et au moins une colonne nommée `adresse mail`. Pour la personnalisation du genre (par ex. `formateur/formatrice`), incluez une colonne `Civilité Formateur`. Une fois l'import réussi, vous serez automatiquement dirigé vers l'étape suivante.
                         </p>
                     </div>
                     <div>
@@ -51,10 +53,16 @@ export default function UserGuide() {
                         </p>
                         <ul>
                             <li><strong>Sélectionner des destinataires :</strong> Cochez les cases pour choisir qui recevra l'e-mail.</li>
-                            <li><strong>Prévisualiser :</strong> Cliquez sur une ligne pour voir un aperçu de l'e-mail personnalisé pour ce destinataire.</li>
-                            <li><strong>Composer l'e-mail :</strong> Rédigez le sujet et le corps de votre e-mail. Utilisez le menu déroulant "Insérer une variable" pour ajouter des champs de votre fichier Excel.</li>
-                             <li><strong>Configurer & Envoyer :</strong> Assurez-vous que vos informations SMTP sont correctes dans l'onglet "Paramètres". Ensuite, cliquez sur "Envoyer" pour démarrer l'envoi.</li>
+                            <li><strong>Prévisualiser :</strong> Cliquez sur une ligne du tableau pour voir un aperçu de l'e-mail personnalisé pour ce destinataire.</li>
+                            <li><strong>Composer l'e-mail :</strong> Rédigez le sujet et le corps de votre e-mail. Utilisez le menu déroulant "Insérer une variable" pour ajouter des champs de votre fichier Excel, ou cliquez sur "Générer avec l'IA" pour une suggestion de texte.</li>
+                             <li><strong>Configurer & Envoyer :</strong> Assurez-vous que vos informations SMTP sont correctes dans l'onglet "Paramètres". Ensuite, cliquez sur "Envoyer". Une boîte de dialogue de confirmation apparaîtra, vous informant du nombre de nouveaux e-mails et de ceux déjà envoyés. Vous pourrez alors confirmer l'envoi et choisir de renvoyer les e-mails si nécessaire.</li>
                         </ul>
+                    </div>
+                     <div>
+                        <h4><History className="inline-block w-5 h-5 mr-2"/>Étape 3 : Consulter l'Historique</h4>
+                        <p>
+                           Naviguez vers l'onglet "Historique d'envoi" dans le menu latéral pour voir la liste de tous les e-mails envoyés. Vous y trouverez le statut de livraison, les détails du destinataire et la date d'envoi pour chaque message.
+                        </p>
                     </div>
                 </AccordionContent>
             </AccordionItem>
