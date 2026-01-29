@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -9,6 +8,8 @@ import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -44,6 +45,7 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
   const [sentCount, setSentCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
+  const [sessionPassword, setSessionPassword] = useState('');
   const recipientCount = recipients.length;
 
   const settingsDocRef = useMemoFirebase(() => {
@@ -53,16 +55,25 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
 
   const { data: smtpConfig, isLoading: isLoadingConfig } = useDoc<SmtpConfig>(settingsDocRef);
 
-  const isReadyToSend = recipientCount > 0 && smtpConfig && smtpConfig.pass;
-
   const handleSendEmails = async () => {
-    if (!smtpConfig || !user || !firestore || !smtpConfig.pass) {
-      toast({
-        variant: 'destructive',
-        title: 'Configuration ou mot de passe manquant',
-        description: "Veuillez configurer vos paramètres SMTP (y compris le mot de passe) dans la page des paramètres.",
-      });
-      return;
+    const currentConfig = smtpConfig;
+    if (!currentConfig || !user || !firestore) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de charger la configuration.'});
+        return;
+    }
+
+    const configForSending: SmtpConfig = {
+      ...currentConfig,
+      pass: currentConfig.pass || sessionPassword,
+    };
+    
+    if (!configForSending.pass) {
+        toast({
+            variant: 'destructive',
+            title: 'Mot de passe manquant',
+            description: "Veuillez fournir le mot de passe SMTP pour continuer.",
+        });
+        return;
     }
 
     setIsSending(true);
@@ -73,7 +84,6 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
 
     const deliveryLogsRef = collection(firestore, 'delivery-logs');
 
-    // Fetch all existing logs for the user once to avoid N+1 queries.
     const logsQuery = query(deliveryLogsRef, where('ownerId', '==', user.uid));
     const existingLogsSnapshot = await getDocs(logsQuery);
     const existingEmailKeys = new Set(existingLogsSnapshot.docs.map(doc => doc.data().emailKey));
@@ -89,14 +99,13 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
 
         const emailKey = `${recipientEmail}_${String(recipient['Date du RDV'])}`;
 
-        // Check against the in-memory Set instead of querying Firestore.
         if (existingEmailKeys.has(emailKey)) {
             setSkippedCount(prev => prev + 1);
         } else {
             const personalizedSubject = replacePlaceholders(emailSubject, recipient);
             const personalizedBody = replacePlaceholders(emailBody, recipient).replace(/\n/g, '<br />');
 
-            const result = await sendConfiguredEmail(smtpConfig, recipientEmail, personalizedSubject, personalizedBody);
+            const result = await sendConfiguredEmail(configForSending, recipientEmail, personalizedSubject, personalizedBody);
             
             const logEntry: Omit<DeliveryLog, 'id'> = {
                 ownerId: user.uid,
@@ -124,6 +133,7 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
     }
     
     setIsSending(false);
+    setSessionPassword('');
 
     toast({
         title: "Envoi d'e-mails terminé",
@@ -147,19 +157,10 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
         </div>
       );
     }
-     if (!smtpConfig.pass) {
-      return (
-        <div className="flex flex-col items-center text-center gap-4 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-4 mt-2">
-            <AlertCircle className="h-8 w-8" />
-            <span>Le mot de passe SMTP est requis pour l'envoi. Veuillez le saisir dans les paramètres.</span>
-             <Button asChild variant="outline" size="sm">
-                <Link href="/settings"><Settings className="mr-2 h-4 w-4" />Aller aux paramètres</Link>
-            </Button>
-        </div>
-      );
-    }
     return null;
   }
+
+  const needsPasswordPrompt = smtpConfig && !smtpConfig.pass;
 
   return (
     <Card>
@@ -185,7 +186,7 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
         )}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button className="w-full" disabled={isSending || !isReadyToSend}>
+            <Button className="w-full" disabled={isSending || recipientCount === 0 || !smtpConfig?.host}>
               {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
               Envoyer à {recipientCount > 0 ? recipientCount : ''} Destinataires
             </Button>
@@ -194,12 +195,30 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmer l'envoi des e-mails</AlertDialogTitle>
               <AlertDialogDescription>
-                Vous êtes sur le point d'envoyer des e-mails aux {recipientCount} destinataires sélectionnés. Le système ignorera ceux qui ont déjà reçu un e-mail pour ce rendez-vous.
+                Vous êtes sur le point d'envoyer des e-mails aux {recipientCount} destinataires sélectionnés.
               </AlertDialogDescription>
             </AlertDialogHeader>
+
+            {needsPasswordPrompt && (
+              <div className="space-y-2 py-2">
+                  <Label htmlFor="session-password">Mot de passe SMTP</Label>
+                  <Input 
+                      id="session-password" 
+                      type="password"
+                      placeholder="••••••••"
+                      value={sessionPassword}
+                      onChange={(e) => setSessionPassword(e.target.value)} 
+                      autoComplete="current-password"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                      Votre mot de passe n'est pas sauvegardé. Il est uniquement utilisé pour cette session d'envoi.
+                  </p>
+              </div>
+            )}
+
             <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
-              <AlertDialogAction onClick={handleSendEmails} disabled={isSending}>
+              <AlertDialogCancel onClick={() => setSessionPassword('')}>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={handleSendEmails} disabled={isSending || (needsPasswordPrompt && !sessionPassword)}>
                 {isSending ? 'Envoi en cours...' : 'Procéder'}
               </AlertDialogAction>
             </AlertDialogFooter>
