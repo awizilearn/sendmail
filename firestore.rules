@@ -15,22 +15,26 @@ service cloud.firestore {
     }
 
     match /recipients/{recipientId} {
-      // read covers get and list.
-      // For list, resource is null, so it only checks isSignedIn(). Client must filter.
-      // For get, resource is not null, so it checks ownership.
-      allow read: if isSignedIn() && (resource == null || isOwner(resource.data.ownerId));
+      // Users can only read/delete their own recipients.
+      // List queries MUST filter by ownerId.
+      allow read, delete: if isOwner(resource.data.ownerId);
+
+      // Users can only create recipients for themselves.
       allow create: if isOwner(request.resource.data.ownerId);
-      allow delete: if isOwner(resource.data.ownerId);
-      // Updates are disabled for simplicity. Users can re-import lists.
+
+      // Updates are disabled for simplicity. Users should re-import lists.
       allow update: if false;
     }
 
     match /delivery-logs/{logId} {
-      // read covers get and list.
-      // For list, resource is null, so it only checks isSignedIn(). Client must filter.
-      // For get, resource is not null, so it checks ownership.
-      allow read: if isSignedIn() && (resource == null || isOwner(resource.data.ownerId));
+      // Users can only read their own logs.
+      // List queries MUST filter by ownerId.
+      allow read: if isOwner(resource.data.ownerId);
+
+      // Users can only create logs for themselves.
       allow create: if isOwner(request.resource.data.ownerId);
+      
+      // Logs are immutable.
       allow update, delete: if false;
     }
 
