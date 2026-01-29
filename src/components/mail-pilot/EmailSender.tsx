@@ -20,7 +20,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { sendConfiguredEmail } from '@/app/actions';
 import type { MailRecipient } from '@/types/mail-recipient';
@@ -28,6 +27,7 @@ import { Progress } from '../ui/progress';
 import { replacePlaceholders } from '@/lib/placeholder-replacer';
 import type { DeliveryLog } from '@/types/delivery-log';
 import type { SmtpConfig } from '@/types/smtp-config';
+import { Checkbox } from '../ui/checkbox';
 
 type EmailSenderProps = {
   recipients: MailRecipient[];
@@ -46,6 +46,12 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
   const [skippedCount, setSkippedCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
   const [sessionPassword, setSessionPassword] = useState('');
+  
+  // State for confirmation flow
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [sendCounts, setSendCounts] = useState({ new: 0, skipped: 0 });
+  const [forceResend, setForceResend] = useState(false);
+
   const recipientCount = recipients.length;
 
   const settingsDocRef = useMemoFirebase(() => {
@@ -55,7 +61,39 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
 
   const { data: smtpConfig, isLoading: isLoadingConfig } = useDoc<SmtpConfig>(settingsDocRef);
 
+  const handleConfirmSend = async () => {
+    if (!user || !firestore || recipientCount === 0) return;
+
+    setForceResend(false); // Reset resend toggle
+
+    const deliveryLogsRef = collection(firestore, 'delivery-logs');
+    const logsQuery = query(deliveryLogsRef, where('ownerId', '==', user.uid));
+    const existingLogsSnapshot = await getDocs(logsQuery);
+    const existingEmailKeys = new Set(existingLogsSnapshot.docs.map(doc => doc.data().emailKey));
+
+    let newRecipients = 0;
+    let alreadySentRecipients = 0;
+
+    for (const recipient of recipients) {
+      const recipientEmail = String(recipient['adresse mail']);
+      if (!recipientEmail) continue;
+
+      const emailKey = `${recipientEmail}_${String(recipient['Date du RDV'])}`;
+      if (existingEmailKeys.has(emailKey)) {
+        alreadySentRecipients++;
+      } else {
+        newRecipients++;
+      }
+    }
+
+    setSendCounts({ new: newRecipients, skipped: alreadySentRecipients });
+    setIsConfirming(true);
+  };
+
+
   const handleSendEmails = async () => {
+    setIsConfirming(false); // Close confirmation dialog
+
     const currentConfig = smtpConfig;
     if (!currentConfig || !user || !firestore) {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de charger la configuration.'});
@@ -73,6 +111,7 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
             title: 'Mot de passe manquant',
             description: "Veuillez fournir le mot de passe SMTP pour continuer.",
         });
+        setIsConfirming(true); // Re-open dialog to ask for password
         return;
     }
 
@@ -83,7 +122,6 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
     setFailedCount(0);
 
     const deliveryLogsRef = collection(firestore, 'delivery-logs');
-
     const logsQuery = query(deliveryLogsRef, where('ownerId', '==', user.uid));
     const existingLogsSnapshot = await getDocs(logsQuery);
     const existingEmailKeys = new Set(existingLogsSnapshot.docs.map(doc => doc.data().emailKey));
@@ -98,8 +136,9 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
         }
 
         const emailKey = `${recipientEmail}_${String(recipient['Date du RDV'])}`;
+        const alreadySent = existingEmailKeys.has(emailKey);
 
-        if (existingEmailKeys.has(emailKey)) {
+        if (alreadySent && !forceResend) {
             setSkippedCount(prev => prev + 1);
         } else {
             const personalizedSubject = replacePlaceholders(emailSubject, recipient);
@@ -137,7 +176,7 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
 
     toast({
         title: "Envoi d'e-mails terminé",
-        description: `Envoyés: ${sentCount}, Ignorés (déjà envoyés): ${skippedCount}, Échoués: ${failedCount}`,
+        description: `Envoyés: ${sentCount}, Ignorés: ${skippedCount}, Échoués: ${failedCount}`,
         duration: 5000,
     });
   };
@@ -184,20 +223,39 @@ export default function EmailSender({ recipients, emailSubject, emailBody }: Ema
             </div>
           </div>
         )}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button className="w-full" disabled={isSending || recipientCount === 0 || !smtpConfig?.host}>
-              {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              Envoyer à {recipientCount > 0 ? recipientCount : ''} Destinataires
-            </Button>
-          </AlertDialogTrigger>
+
+        <Button className="w-full" onClick={handleConfirmSend} disabled={isSending || isConfirming || recipientCount === 0 || !smtpConfig?.host}>
+          {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+          Envoyer à {recipientCount > 0 ? recipientCount : ''} Destinataires
+        </Button>
+
+        <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmer l'envoi des e-mails</AlertDialogTitle>
               <AlertDialogDescription>
-                Vous êtes sur le point d'envoyer des e-mails aux {recipientCount} destinataires sélectionnés.
+                Vous êtes sur le point d'envoyer des e-mails à {recipientCount} destinataires.
+                <br/>- {sendCounts.new} nouveaux e-mails seront envoyés.
+                {sendCounts.skipped > 0 && (
+                  <span className="mt-2 block font-medium">
+                    - {sendCounts.skipped} destinataires ont déjà reçu cet e-mail.
+                  </span>
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
+
+            {sendCounts.skipped > 0 && (
+              <div className="flex items-center space-x-2 pt-2">
+                <Checkbox
+                  id="force-resend"
+                  checked={forceResend}
+                  onCheckedChange={(checked) => setForceResend(Boolean(checked))}
+                />
+                <Label htmlFor="force-resend" className="cursor-pointer text-sm font-normal">
+                  Confirmer pour renvoyer aux {sendCounts.skipped} destinataires.
+                </Label>
+              </div>
+            )}
 
             {needsPasswordPrompt && (
               <div className="space-y-2 py-2">

@@ -15,7 +15,9 @@ service cloud.firestore {
     }
 
     match /recipients/{recipientId} {
+      // Get is secured by ownerId on the document itself
       allow get, delete: if isOwner(resource.data.ownerId);
+      // List is only allowed for signed-in users. Client query must filter by ownerId.
       allow list: if isSignedIn();
       allow create: if isOwner(request.resource.data.ownerId);
       // Updates are disabled for simplicity. Users can re-import lists.
@@ -23,7 +25,9 @@ service cloud.firestore {
     }
 
     match /delivery-logs/{logId} {
+      // Get is secured by ownerId on the document itself
       allow get: if isOwner(resource.data.ownerId);
+      // List is only allowed for signed-in users. Client query must filter by ownerId.
       allow list: if isSignedIn();
       allow create: if isOwner(request.resource.data.ownerId);
       allow update, delete: if false;
