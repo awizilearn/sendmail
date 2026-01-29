@@ -15,9 +15,11 @@ service cloud.firestore {
     }
 
     match /recipients/{recipientId} {
-      // Users can only read/delete their own recipients.
-      // List queries MUST filter by ownerId.
-      allow read, delete: if isOwner(resource.data.ownerId);
+      // Users can only get/delete their own recipients.
+      allow get, delete: if isOwner(resource.data.ownerId);
+
+      // List queries MUST filter by ownerId on the client.
+      allow list: if isSignedIn();
 
       // Users can only create recipients for themselves.
       allow create: if isOwner(request.resource.data.ownerId);
@@ -27,9 +29,11 @@ service cloud.firestore {
     }
 
     match /delivery-logs/{logId} {
-      // Users can only read their own logs.
-      // List queries MUST filter by ownerId.
-      allow read: if isOwner(resource.data.ownerId);
+      // Users can only get their own logs.
+      allow get: if isOwner(resource.data.ownerId);
+
+      // List queries MUST filter by ownerId on the client.
+      allow list: if isSignedIn();
 
       // Users can only create logs for themselves.
       allow create: if isOwner(request.resource.data.ownerId);
